@@ -21,19 +21,31 @@ The Mac App Store is not planned for 1.0 (see "Later: App Store" at the end).
    [opening-an-unsigned-app.md](opening-an-unsigned-app.md), and check: the Getting Started deck appears; the
    widget can be added (right-click the desktop > Edit Widgets); the notch works on a Mac with one. The
    widget is the part most likely to differ, because macOS may not load an extension without a real team.
-4. Tag and publish. The file is uploaded as `FishBrain-unsigned.dmg` (the same file, a name that does not
-   change per version) so the README's `releases/latest/download/` link always works, and the badges for
-   the version and the download count update by themselves. The notes are the changelog section, the
-   opening steps and the checksum:
+4. Tag and push. A GitHub Action does the rest:
+
+   ```sh
+   git tag v1.0 && git push origin v1.0
+   ```
+
+   The **Release** workflow (`.github/workflows/release.yml`) checks that the tag matches
+   `MARKETING_VERSION` and that `CHANGELOG.md` has that section, builds the unsigned DMG on a GitHub
+   macOS runner with `Scripts/release.sh --unsigned`, and publishes the release with the file uploaded
+   as `FishBrain-unsigned.dmg`. The name is the same for every version so the README's
+   `releases/latest/download/` link never changes; the version and download badges update by themselves.
+   The notes come from `Scripts/release-notes.sh`: the download link and SHA-256, the "opening it the
+   first time" steps, then the changelog section.
+
+   To try the build without publishing anything, open the repository's **Actions** tab, choose
+   **Release** and **Run workflow**. The DMG is kept as an artifact of that run.
+
+   If the workflow is unavailable, build on your Mac (step 2) and publish by hand:
 
    ```sh
    git tag v1.0 && git push origin v1.0
    cp build/release/FishBrain-1.0-unsigned.dmg build/release/FishBrain-unsigned.dmg
    DMG=build/release/FishBrain-unsigned.dmg
-   gh release create v1.0 "$DMG" --title "FishBrain 1.0" --notes-file <(
-     awk '/^## 1.0$/{f=1;next} /^## /{f=0} f' CHANGELOG.md
-     echo; cat docs/opening-an-unsigned-app.md
-     echo; echo "SHA-256: $(shasum -a 256 "$DMG" | cut -d' ' -f1)")
+   gh release create v1.0 "$DMG" --title "FishBrain 1.0" \
+     --notes-file <(Scripts/release-notes.sh 1.0 "$(shasum -a 256 "$DMG" | cut -d' ' -f1)")
    ```
 
 ## Optional: a signed and notarized release (needs a paid Apple Developer Program account)

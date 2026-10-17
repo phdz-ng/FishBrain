@@ -1,0 +1,68 @@
+name: Release
+
+# Push a tag like v1.0 and this builds the unsigned DMG and publishes the GitHub release.
+# "Run workflow" on the Actions tab does the same build but publishes nothing: the DMG stays
+# attached to the run as an artifact, to try the build.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # the build number is the number of commits
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Check the version
+        run: |
+          version=$(awk -F'"' '/MARKETING_VERSION/ {print $2; exit}' project.yml)
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "::error::The tag $GITHUB_REF_NAME does not match MARKETING_VERSION $version in project.yml"
+            exit 1
+          fi
+          grep -q "^## $version\$" CHANGELOG.md || { echo "::error::CHANGELOG.md has no '## $version' section"; exit 1; }
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Build the unsigned DMG
+        run: Scripts/release.sh --unsigned
+
+      - name: Name the file and write the notes
+        run: |
+          # One name for every version, so the README's releases/latest/download/ link never changes.
+          cp "build/release/FishBrain-$VERSION-unsigned.dmg" build/release/FishBrain-unsigned.dmg
+          sha=$(shasum -a 256 build/release/FishBrain-unsigned.dmg | cut -d' ' -f1)
+          echo "SHA-256 $sha"
+          Scripts/release-notes.sh "$VERSION" "$sha" > build/release/notes.md
+
+      - name: Keep the DMG with the run
+        uses: actions/upload-artifact@v4
+        with:
+          name: FishBrain-${{ env.VERSION }}-unsigned
+          path: |
+            build/release/FishBrain-unsigned.dmg
+            build/release/notes.md
+
+      - name: Publish the release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" build/release/FishBrain-unsigned.dmg --clobber
+            gh release edit "$GITHUB_REF_NAME" --notes-file build/release/notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" build/release/FishBrain-unsigned.dmg \
+              --title "FishBrain $VERSION" --notes-file build/release/notes.md --verify-tag
+          fi
