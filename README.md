@@ -9,7 +9,7 @@
 [![CI](https://github.com/phdz-ng/FishBrain/actions/workflows/ci.yml/badge.svg)](https://github.com/phdz-ng/FishBrain/actions/workflows/ci.yml)
 
 macOS flashcard app with an interactive WidgetKit widget. Requires macOS 14.0+. Open the download, drag
-FishBrain to Applications, and allow it once the first time ([why](#the-first-time-you-open-it)).
+FishBrain to Applications. If macOS warns you the first time, [do this](#if-macos-says-it-cannot-verify-fishbrain).
 
 [All releases and notes](https://github.com/phdz-ng/FishBrain/releases)
 
@@ -30,15 +30,14 @@ FishBrain to Applications, and allow it once the first time ([why](#the-first-ti
 1. **[Download FishBrain-unsigned.dmg](https://github.com/phdz-ng/FishBrain/releases/latest/download/FishBrain-unsigned.dmg)**
    (always the latest version; the release page shows the version, notes and checksum).
 2. Open the DMG and drag **FishBrain** to **Applications**.
-3. Open FishBrain. macOS will warn you the first time; see below.
+3. Open FishBrain. If macOS warns you the first time, follow the steps below.
 
 Or build it yourself, as in the next section.
 
-### The first time you open it
+### If macOS says it cannot verify FishBrain
 
-FishBrain is not signed with an Apple Developer ID (that needs a paid Apple Developer Program
-membership), so macOS does not recognize the developer and warns you once. It is safe to open if you
-downloaded it from this repository's Releases page.
+The first time you open FishBrain, macOS may show a warning instead of opening it. Take these steps once
+and it opens normally from then on.
 
 **What you will see**
 
@@ -66,8 +65,8 @@ After that, FishBrain opens normally like any other app.
 shasum -a 256 ~/Downloads/FishBrain-unsigned.dmg
 ```
 
-The desktop widget depends on macOS loading an unsigned extension, which it may not do on every Mac
-(see [Signing and App Group](docs/DEVELOPMENT.md#signing-and-app-group)); the main window and the notch work either way.
+The desktop widget may not appear under **Edit Widgets** on every Mac
+(details in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#signing-and-app-group)); the main window and the notch work either way.
 
 ## Build
 

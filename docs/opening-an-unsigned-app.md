@@ -1,8 +1,7 @@
-## Opening FishBrain the first time
+## If macOS says it cannot verify FishBrain
 
-FishBrain is not signed with an Apple Developer ID (that needs a paid Apple Developer Program
-membership), so macOS blocks it the first time with a message that Apple could not verify it. It is
-safe to open if you downloaded it from this repository's Releases page. You only do this once.
+The first time you open FishBrain, macOS may show a warning instead of opening it. Take these steps once
+and it opens normally from then on.
 
 What you will see: on macOS 15 or later, a "Not Opened" dialog that says Apple could not verify FishBrain
 is free of malware; on macOS 14, a dialog that says the developer cannot be verified, or, if you
