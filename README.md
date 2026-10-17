@@ -2,10 +2,10 @@
 
 [![Download FishBrain for macOS](https://img.shields.io/badge/Download-FishBrain_for_macOS-2ea44f?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/phdz-ng/FishBrain/releases/latest/download/FishBrain-unsigned.dmg)
 
-[![Latest release](https://img.shields.io/github/v/release/phdz-ng/FishBrain?cacheSeconds=3600)](https://github.com/phdz-ng/FishBrain/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/phdz-ng/FishBrain/total?cacheSeconds=3600)](https://github.com/phdz-ng/FishBrain/releases)
+[![Latest release](https://img.shields.io/github/v/release/phdz-ng/FishBrain?style=flat)](https://github.com/phdz-ng/FishBrain/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/phdz-ng/FishBrain/total?style=flat)](https://github.com/phdz-ng/FishBrain/releases)
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue)](#install)
-[![License](https://img.shields.io/github/license/phdz-ng/FishBrain?cacheSeconds=3600)](LICENSE)
+[![License](https://img.shields.io/github/license/phdz-ng/FishBrain?style=flat)](LICENSE)
 [![CI](https://github.com/phdz-ng/FishBrain/actions/workflows/ci.yml/badge.svg)](https://github.com/phdz-ng/FishBrain/actions/workflows/ci.yml)
 
 macOS flashcard app with an interactive WidgetKit widget. Requires macOS 14.0+. Open the download, drag
