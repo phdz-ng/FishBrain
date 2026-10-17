@@ -1,0 +1,16 @@
+// Shared build settings. Do not put personal values here;
+// copy Local.xcconfig.example to Local.xcconfig (gitignored) instead.
+
+BUNDLE_ID_PREFIX = io.github.phdz-ng
+
+// $(TeamIdentifierPrefix) is "<TEAMID>." when a team is set and empty otherwise,
+// so the group resolves to <TEAMID>.io.github.phdz-ng.fishbrain when signed with a team.
+APP_GROUP_ID = $(TeamIdentifierPrefix)$(BUNDLE_ID_PREFIX).fishbrain
+
+// Default: ad-hoc signing so anyone can build without an Apple Developer account.
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = -
+DEVELOPMENT_TEAM =
+
+// Optional per-developer overrides (team, signing identity, bundle prefix).
+#include? "Local.xcconfig"

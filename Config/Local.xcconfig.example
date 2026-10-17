@@ -1,0 +1,6 @@
+// Copy to Local.xcconfig and fill in. Needed for the widget to be reliably
+// picked up by macOS and for the App Group to be team-prefixed.
+DEVELOPMENT_TEAM = ABCDE12345
+CODE_SIGN_STYLE = Automatic
+CODE_SIGN_IDENTITY = Apple Development
+// BUNDLE_ID_PREFIX = com.yourorg

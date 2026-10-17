@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      # The FishBrain scheme builds the app and the embedded widget extension.
+      - name: Build app and widget
+        run: |
+          xcodebuild build \
+            -project FishBrain.xcodeproj \
+            -scheme FishBrain \
+            -destination 'platform=macOS' \
+            -derivedDataPath build
+
+      - name: Check widget is embedded
+        run: test -d build/Build/Products/Debug/FishBrain.app/Contents/PlugIns/FishBrainWidget.appex
+
+      - name: Run unit tests
+        run: |
+          xcodebuild test \
+            -project FishBrain.xcodeproj \
+            -scheme FishBrain \
+            -destination 'platform=macOS' \
+            -derivedDataPath build
