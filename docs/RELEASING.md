@@ -21,11 +21,15 @@ The Mac App Store is not planned for 1.0 (see "Later: App Store" at the end).
    [opening-an-unsigned-app.md](opening-an-unsigned-app.md), and check: the Getting Started deck appears; the
    widget can be added (right-click the desktop > Edit Widgets); the notch works on a Mac with one. The
    widget is the part most likely to differ, because macOS may not load an extension without a real team.
-4. Tag and publish. The notes are the changelog section, the opening steps and the checksum:
+4. Tag and publish. The file is uploaded as `FishBrain-unsigned.dmg` (the same file, a name that does not
+   change per version) so the README's `releases/latest/download/` link always works, and the badges for
+   the version and the download count update by themselves. The notes are the changelog section, the
+   opening steps and the checksum:
 
    ```sh
    git tag v1.0 && git push origin v1.0
-   DMG=build/release/FishBrain-1.0-unsigned.dmg
+   cp build/release/FishBrain-1.0-unsigned.dmg build/release/FishBrain-unsigned.dmg
+   DMG=build/release/FishBrain-unsigned.dmg
    gh release create v1.0 "$DMG" --title "FishBrain 1.0" --notes-file <(
      awk '/^## 1.0$/{f=1;next} /^## /{f=0} f' CHANGELOG.md
      echo; cat docs/opening-an-unsigned-app.md

@@ -4,6 +4,10 @@ FishBrain is not signed with an Apple Developer ID (that needs a paid Apple Deve
 membership), so macOS blocks it the first time with a message that Apple could not verify it. It is
 safe to open if you downloaded it from this repository's Releases page. You only do this once.
 
+What you will see: on macOS 15 or later, a "Not Opened" dialog that says Apple could not verify FishBrain
+is free of malware; on macOS 14, a dialog that says the developer cannot be verified, or, if you
+Control-click and choose Open, "Are you sure you want to open it?". The wording varies by macOS version.
+
 **macOS 15 Sequoia or later**
 
 1. Open the DMG and drag **FishBrain** to **Applications**.
@@ -22,7 +26,7 @@ Control-click (or right-click) **FishBrain** in Applications, choose **Open**, t
 Every release lists the DMG's SHA-256 checksum. Compare it with:
 
 ```sh
-shasum -a 256 ~/Downloads/FishBrain-<version>-unsigned.dmg
+shasum -a 256 ~/Downloads/FishBrain-unsigned.dmg
 ```
 
 **Prefer not to trust an unsigned app?** Build it yourself from source; the README explains how.

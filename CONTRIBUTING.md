@@ -19,7 +19,7 @@ xcodebuild -project FishBrain.xcodeproj -scheme FishBrain -destination 'platform
 
 Launch the app with `-FishBrainSampleData` to see sample decks without touching your own library
 (add `-FishBrainSkipWelcome` to skip the welcome sheet).
-The [README](README.md) covers the architecture, storage and signing in more detail.
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) covers storage, the widget and signing in more detail.
 
 ## Pull requests
 
