@@ -406,7 +406,7 @@ struct MainWindowView: View {
             onMoveItem: moveItem
         )
         .frame(width: Self.sidebarWidth)
-        .background { Rectangle().fill(Theme.Surface.sidebar).ignoresSafeArea() }
+        .background { Rectangle().fill(accent.sidebar).ignoresSafeArea() }
         .sheet(isPresented: $isShowingWelcome) {
             WelcomeSheet(
                 hasGettingStartedDeck: store.decks.contains { $0.name == GettingStarted.deckName },
@@ -566,7 +566,8 @@ struct MainWindowView: View {
                 onDelete: { subjectPendingDeletion = subject },
                 onExport: { exportTarget = .subject(subject.id) },
                 onImport: { importRequest = ImportRequest(subjectID: subject.id) },
-                exportReason: exportReason(for: .subject(subject.id))
+                exportReason: exportReason(for: .subject(subject.id)),
+                appearance: $settings.appearance
             )
             .id(subject.id)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -895,13 +896,13 @@ struct SearchResultsList: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(result.card.front.isEmpty ? "Untitled card" : result.card.front)
                                         .font(Theme.Typography.rowTitle.weight(.medium))
-                                        .foregroundStyle(Theme.TextColor.primary)
+                                        .foregroundStyle(isSelected ? Theme.TextColor.onAccent : Theme.TextColor.primary)
                                     Text(result.card.back)
                                         .font(Theme.Typography.caption)
-                                        .foregroundStyle(isSelected ? Theme.TextColor.primary : Theme.TextColor.secondary)
+                                        .foregroundStyle(isSelected ? Theme.TextColor.onAccent : Theme.TextColor.secondary)
                                     Text(result.deckPath ?? result.deckName)
                                         .font(Theme.Typography.sectionLabel)
-                                        .foregroundStyle(isSelected ? Theme.TextColor.primary : accent.light)
+                                        .foregroundStyle(isSelected ? Theme.TextColor.onAccent : accent.light)
                                 }
                                 .lineLimit(1)
                                 Spacer(minLength: 0)
@@ -1020,16 +1021,22 @@ struct DeckContentView: View {
     }
 
     private func header(for deck: Deck) -> some View {
-        // Toolbar drops below the title when the window is narrow.
+        // When the window is narrow the Appearance button moves into the ⋯ menu first, and then the
+        // toolbar drops below the title.
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .bottom, spacing: 16) {
                 titleBlock(for: deck)
                 Spacer(minLength: 16)
-                toolbar
+                toolbar(appearanceInMenu: false)
+            }
+            HStack(alignment: .bottom, spacing: 16) {
+                titleBlock(for: deck)
+                Spacer(minLength: 16)
+                toolbar(appearanceInMenu: true)
             }
             VStack(alignment: .leading, spacing: 14) {
                 titleBlock(for: deck)
-                toolbar
+                toolbar(appearanceInMenu: true)
             }
         }
     }
@@ -1067,7 +1074,7 @@ struct DeckContentView: View {
         .fixedSize(horizontal: true, vertical: false)
     }
 
-    private var toolbar: some View {
+    private func toolbar(appearanceInMenu: Bool) -> some View {
         DeckToolbar(
             onAddCard: onAddCard,
             onImportCSV: onImportCSV,
@@ -1079,7 +1086,9 @@ struct DeckContentView: View {
             onLearn: onLearn,
             learnNeedsCards: !(deck.map(LearnSession.canStart) ?? false),
             onReview: onReview,
-            reviewMinutes: settings.reviewMinutes
+            reviewMinutes: settings.reviewMinutes,
+            appearance: $settings.appearance,
+            appearanceInMenu: appearanceInMenu
         )
     }
 }
@@ -1104,6 +1113,10 @@ struct DeckToolbar: View {
     var onReview: (() -> Void)?
     /// The length the next sprint starts with, shown on the button ("Review 10 min").
     var reviewMinutes: Int?
+    /// The appearance setting: a round button after Review, or nil for none.
+    var appearance: Binding<AppearanceChoice>?
+    /// Too narrow for the button: Appearance ▸ goes in the ⋯ menu instead.
+    var appearanceInMenu = false
 
     @State private var isShowingLearnNotice = false
 
@@ -1130,16 +1143,27 @@ struct DeckToolbar: View {
                 .opacity(onReview == nil ? 0.5 : 1)
                 .help(onReview == nil ? "Coming soon" : "Review the cards that are due against the clock")
                 .accessibilityHint("Opens the Review sprint setup")
+            if let appearance, !appearanceInMenu { AppearanceButton(selection: appearance) }
             addMenu
-            if let onExport { moreMenu(onExport) }
+            if onExport != nil || (appearance != nil && appearanceInMenu) { moreMenu }
         }
         .fixedSize()
     }
 
-    private func moreMenu(_ onExport: @escaping () -> Void) -> some View {
+    /// What the ⋯ menu holds: Export…, and Appearance ▸ when the button doesn't fit.
+    static func moreMenuTitles(hasExport: Bool, appearanceInMenu: Bool) -> [String] {
+        (hasExport ? ["Export…"] : []) + (appearanceInMenu ? ["Appearance"] : [])
+    }
+
+    private var moreMenu: some View {
         Menu {
-            Button("Export…", action: onExport)
-                .disabled(exportReason != nil)
+            if let onExport {
+                Button("Export…", action: onExport)
+                    .disabled(exportReason != nil)
+            }
+            if let appearance, appearanceInMenu {
+                Menu("Appearance") { AppearanceMenuItems(selection: appearance) }
+            }
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 13, weight: .semibold))
@@ -1254,7 +1278,6 @@ extension PreviewData {
         .environmentObject(PreviewData.studyClock())
         .environmentObject(PreviewData.settings())
         .environmentObject(PreviewData.composer())
-        .preferredColorScheme(.dark)
 }
 
 #Preview("Main window, empty") {
@@ -1266,7 +1289,6 @@ extension PreviewData {
         .environmentObject(PreviewData.studyClock())
         .environmentObject(PreviewData.settings())
         .environmentObject(PreviewData.composer())
-        .preferredColorScheme(.dark)
 }
 #endif
 

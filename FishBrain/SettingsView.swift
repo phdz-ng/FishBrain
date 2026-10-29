@@ -133,6 +133,14 @@ private struct GeneralSettingsTab: View {
 
     var body: some View {
         SettingsPage {
+            SettingsHeading(text: "Appearance")
+            AppearanceTiles(selection: $settings.appearance)
+            Text("Also in the toolbar and in View > Appearance.")
+                .font(Theme.Typography.caption)
+                .foregroundStyle(Theme.TextColor.secondary)
+
+            HairlineDivider().padding(.vertical, 6)
+
             SettingsHeading(text: "Accent color")
             HStack(spacing: 18) {
                 ForEach(AccentChoice.allCases, id: \.self) { choice in
@@ -141,7 +149,7 @@ private struct GeneralSettingsTab: View {
                     }
                 }
             }
-            Text("Used by the app, the widgets and the notch.")
+            Text("Used by the app, the widgets and the notch, in light and dark.")
                 .font(Theme.Typography.caption)
                 .foregroundStyle(Theme.TextColor.secondary)
 
@@ -230,5 +238,4 @@ private struct NotchSettingsTab: View {
         .environmentObject(AIAccountStore(
             secrets: InMemorySecretStore(), cacheStorage: AIModelCacheStorage(directory: FileManager.default.temporaryDirectory), settings: settings
         ))
-        .preferredColorScheme(.dark)
 }
