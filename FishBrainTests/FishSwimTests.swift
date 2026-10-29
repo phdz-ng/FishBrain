@@ -100,6 +100,7 @@ final class FishPillNotchTests: XCTestCase {
             deckStore: { deckStore }, playbackStore: { playback }, settingsStore: { settings }
         )
         addTeardownBlock { controller.stop() }
+        settings.pillStyle = .classic
         controller.start()
         let classicWidth = try XCTUnwrap(controller.collapsedFrame).width
 

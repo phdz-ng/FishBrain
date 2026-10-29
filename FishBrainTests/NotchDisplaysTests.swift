@@ -376,10 +376,10 @@ final class PillStyleTests: XCTestCase {
         XCTAssertTrue(PillStyle.session.summary.contains("timer"))
     }
 
-    func testClassicIsTheDefaultAndAlwaysAvailable() {
-        XCTAssertEqual(AppSettings().pillStyle, .classic)
+    func testCardIsTheDefaultAndClassicIsAlwaysAvailable() {
+        XCTAssertEqual(AppSettings().pillStyle, .card)
         XCTAssertTrue(PillStyle.classic.isAvailable)
-        XCTAssertEqual(PillStyle.available.first, .classic)
+        XCTAssertEqual(PillStyle.available.first, .card)
     }
 
     func testAStyleThatIsNotAvailableYetDrawsAsClassic() {
@@ -423,7 +423,7 @@ final class PillStyleTests: XCTestCase {
     func testTheNoteSaysWhereTheStyleAppliesAndWhenNoDrawnNotchIsOnScreen() {
         var selection = PillStyle.classic
         let withDrawn = PillStylePicker(selection: .init(get: { selection }, set: { selection = $0 }), hasDrawnNotch: true)
-        XCTAssertTrue(withDrawn.note.contains("A real notch always shows Classic"))
+        XCTAssertTrue(withDrawn.note.contains("the other styles show Classic there"))
         XCTAssertFalse(withDrawn.note.contains("applies when one appears"))
 
         let without = PillStylePicker(selection: .init(get: { selection }, set: { selection = $0 }), hasDrawnNotch: false)

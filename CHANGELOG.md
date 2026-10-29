@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Card text in the resting notch.** A new pill style, **Card**, shows the card you're learning in the notch
+  without hovering, and flips between front and answer every 5 seconds (front in white, answer in orange).
+  Where FishBrain draws the notch it is now the size of a real MacBook notch, 200 × 32 pt. On a Mac with a
+  notch the text sits just left of the camera and the deck color moves to the right. Long text shrinks, then
+  slides; with Reduce Motion the flip fades and long text is cut off. A new card always starts on its front,
+  and the flip is only what the notch shows: it doesn't count as studying or touch the widgets. Card is the
+  new default, and anyone on Classic moves to it once (Fish, Streak and Session are kept). Settings > Notch
+  gets **Flip every** (3, 5 or 10 seconds, or Off).
+
 ## 1.0
 
 The first release: flashcards that come to you, on the desktop and in the notch.
