@@ -23,10 +23,18 @@ struct CapsuleButtonStyle: ButtonStyle {
             }
         }
 
+        private var textColor: Token {
+            switch kind {
+            case .primary: Theme.TextColor.onAccent
+            case .secondary: Theme.TextColor.primary
+            case .tinted: accent.light
+            }
+        }
+
         var body: some View {
             configuration.label
                 .font(Theme.Typography.caption.weight(kind == .primary ? .semibold : .medium))
-                .foregroundStyle(kind == .tinted ? accent.light : Theme.TextColor.primary)
+                .foregroundStyle(textColor)
                 .padding(.horizontal, kind == .primary ? 16 : 14)
                 .frame(minHeight: 34)
                 .background(Capsule().fill(fill))
@@ -48,6 +56,5 @@ extension ButtonStyle where Self == CapsuleButtonStyle {
         Button("Paste Cards") {}.buttonStyle(.capsuleSecondary)
         Button("Add Card") {}.buttonStyle(.capsulePrimary)
     }
-    .padding(24)
-    .background(Theme.Surface.previewBackdrop)
+    .appearancePreview()
 }

@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// Every shared component on one screen, with an accent picker to check that changing the
-/// accent recolors all of them. Preview and test use only.
+/// Every shared component on one screen, in light and dark side by side, with an accent picker to
+/// check that changing the accent recolors all of them. Preview and test use only.
 struct ComponentGallery: View {
     @State var accent: AccentChoice = .default
+    /// The appearances shown, side by side.
+    var schemes: [ColorScheme] = [.light, .dark]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -11,7 +13,22 @@ struct ComponentGallery: View {
                 ForEach(AccentChoice.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
             }
             .pickerStyle(.segmented)
-            .frame(width: 320)
+            .frame(width: 400)
+            HStack(alignment: .top, spacing: 0) {
+                ForEach(schemes, id: \.self) { scheme in
+                    sheet
+                        .padding(28)
+                        .background(Theme.Surface.previewBackdrop)
+                        .environment(\.colorScheme, scheme)
+                }
+            }
+        }
+        .environment(\.accentChoice, accent)
+        .padding(16)
+    }
+
+    private var sheet: some View {
+        VStack(alignment: .leading, spacing: 20) {
 
             HStack(alignment: .top, spacing: 24) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -55,10 +72,6 @@ struct ComponentGallery: View {
                     .background(RoundedRectangle(cornerRadius: Theme.Radius.widget, style: .continuous).fill(accent.flippedSurface))
             }
         }
-        .environment(\.accentChoice, accent)
-        .padding(28)
-        .background(Theme.Surface.previewBackdrop)
-        .preferredColorScheme(.dark)
     }
 }
 

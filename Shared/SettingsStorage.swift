@@ -37,6 +37,11 @@ struct AppSettings: Codable, Equatable, Sendable {
     var ai = AISettings()
     /// How long the last Review sprint was set for, which the next one starts with.
     var reviewMinutes = ReviewRun.defaultMinutes
+    /// Light, Dark or Match system.
+    var appearance: AppearanceChoice = .default
+    /// The light themes migration has run (see `LightThemeMigration`). New settings start with it done;
+    /// a file saved before light themes existed has no key, so it decodes as not done.
+    var didMigrateLightTheme1 = true
     static let defaultDailyGoal = 20
     static let dailyGoalChoices = [10, 20, 30, 50]
 
@@ -98,6 +103,8 @@ struct AppSettings: Codable, Equatable, Sendable {
         reviewMinutes = ReviewRun.clamped(
             minutes: try container.decodeIfPresent(Int.self, forKey: .reviewMinutes) ?? ReviewRun.defaultMinutes
         )
+        appearance = try container.decodeIfPresent(AppearanceChoice.self, forKey: .appearance) ?? .default
+        didMigrateLightTheme1 = try container.decodeIfPresent(Bool.self, forKey: .didMigrateLightTheme1) ?? false
     }
 }
 

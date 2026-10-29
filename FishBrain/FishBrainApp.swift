@@ -9,6 +9,11 @@ struct FishBrainApp: App {
     @StateObject private var settings = AppEnvironment.shared.settingsStore
     @StateObject private var playback = AppEnvironment.shared.playbackStore
 
+    init() {
+        // Before the first window, so it opens in the chosen appearance.
+        AppearanceController.shared.start(settings: AppEnvironment.shared.settingsStore)
+    }
+
     var body: some Scene {
         Window("FishBrain", id: "main") {
             MainWindowView()
@@ -21,7 +26,6 @@ struct FishBrainApp: App {
                 .environmentObject(AppEnvironment.shared.aiStore)
                 .environmentObject(AppEnvironment.shared.composer)
                 .environment(\.accentChoice, settings.accent)
-                .preferredColorScheme(.dark)
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
                     store.flush()
                 }
@@ -29,14 +33,13 @@ struct FishBrainApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
         .defaultSize(width: 1040, height: 680)
-        .commands { AppCommands() }
+        .commands { AppCommands(settings: settings) }
 
         Settings {
             SettingsView()
                 .environmentObject(settings)
                 .environmentObject(AppEnvironment.shared.aiStore)
                 .environment(\.accentChoice, settings.accent)
-                .preferredColorScheme(.dark)
         }
     }
 }

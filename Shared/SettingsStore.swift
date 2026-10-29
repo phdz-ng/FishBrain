@@ -9,6 +9,10 @@ final class SettingsStore: ObservableObject {
     @Published var accent: AccentChoice {
         didSet { if accent != oldValue { save(reloadsWidgets: true) } }
     }
+    /// Light, Dark or Match system. The widget follows it too.
+    @Published var appearance: AppearanceChoice {
+        didSet { if appearance != oldValue { save(reloadsWidgets: true) } }
+    }
     /// "Show in notch".
     @Published var showsNotch: Bool {
         didSet { if showsNotch != oldValue { save(reloadsWidgets: false) } }
@@ -82,9 +86,12 @@ final class SettingsStore: ObservableObject {
     ) {
         self.storage = storage
         self.onSaved = onSaved
-        var loaded = storage.load()
+        // Two one-time migrations, each with its own flag: light themes, then Classic to Card.
+        let (migrated, migratedLightTheme) = LightThemeMigration.apply(storage.load())
+        var loaded = migrated
         let migratedPillStyle = loaded.migratePillStyleToCard()
         self.accent = loaded.accent
+        self.appearance = loaded.appearance
         self.showsNotch = loaded.showsNotch
         self.notchDeckID = loaded.notchDeckID
         self.gettingStartedHandled = loaded.gettingStartedHandled
@@ -99,7 +106,8 @@ final class SettingsStore: ObservableObject {
         self.offersCardFromCopy = loaded.offersCardFromCopy
         self.ai = loaded.ai
         self.reviewMinutes = loaded.reviewMinutes
-        if migratedPillStyle { save(reloadsWidgets: false) }
+        // The light theme changes what the widget draws; the pill style does not.
+        if migratedLightTheme || migratedPillStyle { save(reloadsWidgets: migratedLightTheme) }
     }
 
     /// What decides which displays get a notch.
@@ -112,7 +120,7 @@ final class SettingsStore: ObservableObject {
 
     private func save(reloadsWidgets: Bool) {
         do {
-            try storage.save(AppSettings(
+            var settings = AppSettings(
                 accent: accent, showsNotch: showsNotch, notchDeckID: notchDeckID,
                 gettingStartedHandled: gettingStartedHandled, hasSeenWelcome: hasSeenWelcome,
                 showsOnExternalDisplays: showsOnExternalDisplays, hidesInFullScreen: hidesInFullScreen,
@@ -121,7 +129,9 @@ final class SettingsStore: ObservableObject {
                 notchFlipInterval: notchFlipInterval, didMigratePillStyleCard1: true,
                 dailyGoal: dailyGoal, keyboardGrading: keyboardGrading,
                 offersCardFromCopy: offersCardFromCopy, ai: ai, reviewMinutes: reviewMinutes
-            ))
+            )
+            settings.appearance = appearance
+            try storage.save(settings)
             lastSaveError = nil
             if reloadsWidgets { onSaved() }
         } catch {

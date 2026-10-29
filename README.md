@@ -23,6 +23,7 @@ FishBrain to Applications. If macOS warns you the first time, [do this](#if-maco
 - **Study your way**: grade cards (Again, Hard, Good, Easy), Learn mode, timed Review sprints, a streak and a daily goal.
 - **Create with AI**: make cards from notes or a PDF with your own Anthropic or OpenAI key, or on your Mac with Apple Intelligence, and review them before saving.
 - **Import and export** CSV files and Anki packages (.apkg).
+- **Light or dark**: opens in a light theme with an orange accent; switch to Dark or Match system with the sun/moon button in the toolbar, View ▸ Appearance or Settings, and pick another accent (Orange, Indigo, Blue, Purple, Teal) in Settings.
 - **Private**: your library stays on your Mac and API keys live in the Keychain.
 
 ## Install

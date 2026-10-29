@@ -65,6 +65,5 @@ struct WelcomeSheet: View {
 #if DEBUG
 #Preview("Welcome") {
     WelcomeSheet(hasGettingStartedDeck: true, onDismiss: {})
-        .preferredColorScheme(.dark)
 }
 #endif

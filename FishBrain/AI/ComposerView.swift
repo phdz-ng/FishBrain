@@ -18,18 +18,18 @@ struct CreateWithAIRow: View {
                 .overlay {
                     Image(systemName: "sparkles")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Theme.TextColor.primary)
+                        .foregroundStyle(Theme.TextColor.onAccent)
                 }
                 .accessibilityHidden(true)
             Text("Create with AI")
                 .font(Theme.Typography.rowTitle.weight(isSelected ? .medium : .regular))
-                .foregroundStyle(Theme.TextColor.primary)
+                .foregroundStyle(isSelected ? Theme.TextColor.onAccent : Theme.TextColor.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             if let badge {
                 Text(badge)
                     .font(Theme.Typography.caption)
                     .monospacedDigit()
-                    .foregroundStyle(isSelected ? Theme.TextColor.primary : Theme.TextColor.secondary)
+                    .foregroundStyle(isSelected ? Theme.TextColor.onAccent : Theme.TextColor.secondary)
             }
         }
         .padding(.horizontal, 10)
@@ -746,7 +746,6 @@ struct WrapLayout: Layout {
         .environmentObject(ai)
         .frame(width: 720, height: 680)
         .background(Theme.Surface.window)
-        .preferredColorScheme(.dark)
 }
 #endif
 

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Light theme, and a new Orange accent.** FishBrain now opens in light: a white window and cards, a
+  sidebar tinted by your accent, and Orange as the new default accent. After the update everyone starts in
+  light; if you had the old default Indigo you now have Orange, and Blue, Purple or Teal are kept. To go
+  back to dark, click the sun button in the toolbar (between Review and the menus) and choose **Dark**, or
+  use **View ▸ Appearance** or **Settings > General > Appearance**. **Match system** follows your Mac. To
+  pick another color, choose it under **Settings > General > Accent color**; every accent works in light
+  and dark. The widget follows the same choice; the notch stays black.
+- The streak flame is now gold and the orange deck color a deeper amber, so neither looks like the Orange
+  accent.
 - **Card text in the resting notch.** A new pill style, **Card**, shows the card you're learning in the notch
   without hovering, and flips between front and answer every 5 seconds (front in white, answer in orange).
   Where FishBrain draws the notch it is now the size of a real MacBook notch, 200 × 32 pt. On a Mac with a
