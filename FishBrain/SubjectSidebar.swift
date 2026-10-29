@@ -294,7 +294,8 @@ struct LibraryDropTargetModifier: ViewModifier {
                             RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.Surface.notch.color).opacity(0.94)
                             Text(reason)
                                 .font(Theme.Typography.footnote)
-                                .foregroundStyle(Theme.Status.problem.color)
+                                // On black in every appearance, so the dark value.
+                                .foregroundStyle(Theme.Status.problem.dark.color)
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.8)
                                 .padding(.horizontal, 8)

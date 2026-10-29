@@ -195,6 +195,8 @@ struct PillStylePicker: View {
         }
         .frame(width: width, height: height)
         .environment(\.accentChoice, accent)
+        // The notch is black in every appearance, so its preview is drawn in dark, as the notch is.
+        .environment(\.colorScheme, .dark)
         .accessibilityHidden(true)
     }
 

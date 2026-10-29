@@ -122,6 +122,35 @@ final class AppearanceStoreTests: XCTestCase {
         XCTAssertEqual(store.accent, .teal)
     }
 
+    func testAnUpdateFrom1_0RunsBothMigrations() throws {
+        // Light themes and FLAS-89's Classic-to-Card move each have their own flag, and both run.
+        try Data(#"{"accent":"indigo","pillStyle":"classic"}"#.utf8).write(to: storage.fileURL)
+        let store = makeStore()
+        XCTAssertEqual(store.appearance, .light)
+        XCTAssertEqual(store.accent, .orange)
+        XCTAssertEqual(store.pillStyle, .card)
+        let saved = storage.load()
+        XCTAssertTrue(saved.didMigrateLightTheme1)
+        XCTAssertTrue(saved.didMigratePillStyleCard1)
+        XCTAssertEqual(saved.pillStyle, .card)
+        XCTAssertEqual(reloads, 1, "saved once, and the widget told")
+    }
+
+    func testThePillMigrationStillRunsAfterTheLightOne() throws {
+        try Data(#"{"accent":"teal","appearance":"dark","didMigrateLightTheme1":true,"pillStyle":"classic"}"#.utf8)
+            .write(to: storage.fileURL)
+        let store = makeStore()
+        XCTAssertEqual(store.appearance, .dark, "the light migration does not run again")
+        XCTAssertEqual(store.pillStyle, .card)
+        XCTAssertTrue(storage.load().didMigratePillStyleCard1)
+        XCTAssertEqual(reloads, 0, "the pill style is not in the widget")
+    }
+
+    func testTheNotchTooltipRedReadsOnBlack() {
+        // The subject sidebar's refusal tooltip is black in every appearance.
+        XCTAssertGreaterThanOrEqual(Theme.Status.problem.dark.contrast(with: Theme.Surface.notch.dark), 4.5)
+    }
+
     func testTheMigrationRunsOnceSoALaterChoiceSurvivesRelaunch() throws {
         try Data(#"{"accent":"indigo"}"#.utf8).write(to: storage.fileURL)
         let first = makeStore()

@@ -653,6 +653,9 @@ Checked in a Debug build with `-FishBrainSampleData -FishBrainSkipWelcome -FishB
   widget mode and dimmed in the background on the desktop.
 - [ ] Notch: black with light text with the app in light. A Mac without a notch (drawn notch) with a
   light and with a dark menu bar.
+- [ ] In light: editing on the Now showing card (white Save text, accent outline, caret), the CSV "Build
+  your card" step (white text on the chosen column chips), and Settings > Notch (the pill preview stays
+  black with light text; "Flip every" reads like the other rows).
 - [ ] Update from 1.0 with Indigo saved: opens in light with Orange; with Teal saved: light with Teal.
   Switch to Dark and Indigo, quit and reopen: they stay.
 
