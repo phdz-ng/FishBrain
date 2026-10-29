@@ -22,14 +22,20 @@ struct PillRestContent: View {
     var rotationInterval = CardScheduler.defaultInterval
     /// An offer to make a card from a copy, or the note that one was made. Takes over the pill while it shows.
     var banner: CopyBanner?
+    /// For the Card style: where the text goes, how often it flips, and when the front showed.
+    var cardLayout: CardRestLayout = .drawn
+    var flipInterval: NotchFlipInterval = .default
+    var restStartedAt = Date()
 
     @Environment(\.accentChoice) private var accent
 
     var body: some View {
         if let banner {
             bannerContent(banner)
+        } else if hasCamera && style == .card {
+            cardContent
         } else if hasCamera {
-            // Only Classic fits beside a camera.
+            // Beside a camera there is room for Classic or the card text only.
             HStack(spacing: 0) {
                 DeckIcon(color: showing.deckColor, size: 16)
                     .frame(maxWidth: .infinity)
@@ -96,6 +102,8 @@ struct PillRestContent: View {
     @ViewBuilder
     private var drawnContent: some View {
         switch PillStyle.resolved(style) {
+        case .card:
+            cardContent
         case .fish:
             FishPillContent(showing: showing, nextRotation: nextRotation, interval: rotationInterval, isActive: isActive)
         case .streak where study != nil:
@@ -110,6 +118,13 @@ struct PillRestContent: View {
             }
             .padding(.horizontal, 12)
         }
+    }
+
+    private var cardContent: some View {
+        CardPillContent(
+            card: showing.card, deckColor: showing.deckColor, layout: cardLayout, notchWidth: notchWidth,
+            flipInterval: flipInterval, startedAt: restStartedAt, isActive: isActive
+        )
     }
 
     static func positionLabel(_ showing: NowShowing) -> some View {
@@ -137,6 +152,8 @@ struct PillStylePicker: View {
     @Binding var selection: PillStyle
     /// Whether a drawn notch is on screen right now.
     var hasDrawnNotch: Bool
+    /// How often the Card preview flips, as the notch does.
+    var flipInterval: NotchFlipInterval = .default
 
     @Environment(\.accentChoice) private var accent
 
@@ -165,13 +182,15 @@ struct PillStylePicker: View {
 
     /// The same view the notch draws, at its resting size.
     private var preview: some View {
-        let height: CGFloat = 24
+        let isCard = PillStyle.resolved(selection) == .card
+        let height: CGFloat = isCard ? NotchGeometry.cardRestSize.height : 24
         let width = NotchGeometry.drawnWidth(forPositionText: NowShowing.sample.positionText, style: selection)
         return ZStack {
             NotchShape(radius: 10).fill(Theme.Surface.notch)
             PillRestContent(
                 style: selection, showing: .sample, hasCamera: false, notchWidth: 0,
-                nextRotation: CardScheduler().nextRotation(after: Date()), study: .sample
+                nextRotation: CardScheduler().nextRotation(after: Date()), study: .sample,
+                flipInterval: flipInterval
             )
         }
         .frame(width: width, height: height)
@@ -221,7 +240,7 @@ struct PillStylePicker: View {
     }
 
     var note: String {
-        let base = "Only on displays where FishBrain draws the notch. A real notch always shows Classic, because the camera is in the middle."
+        let base = "On a Mac with a notch the camera is in the middle: Card shows the text beside it, and the other styles show Classic there."
         return hasDrawnNotch ? base : base + " No drawn notch is on screen right now, so your choice applies when one appears."
     }
 }

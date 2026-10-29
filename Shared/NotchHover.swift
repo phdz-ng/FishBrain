@@ -40,6 +40,8 @@ extension NotchGeometry {
         case .streak: return streakRestWidth
         case .session: return sessionRestWidth
         case .classic: return drawnRestWidth + (wing(forPositionText: text) - collapsedWing)
+        // A fixed size, like the real notch it copies; long text shrinks and slides instead.
+        case .card: return cardRestSize.width
         }
     }
 

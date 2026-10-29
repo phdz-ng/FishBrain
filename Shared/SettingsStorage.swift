@@ -19,8 +19,13 @@ struct AppSettings: Codable, Equatable, Sendable {
     var hidesInFullScreen = true
     /// "Only on the display with the active menu bar".
     var onlyOnActiveDisplay = false
-    /// What the drawn notch shows at rest.
-    var pillStyle: PillStyle = .classic
+    /// What the notch shows at rest.
+    var pillStyle: PillStyle = .default
+    /// "Flip every": how often the resting Card notch turns between front and answer.
+    var notchFlipInterval: NotchFlipInterval = .default
+    /// The Classic-to-Card move has run (`migratePillStyleToCard`). A new install never needs it; a
+    /// file written before it existed decodes as false.
+    var didMigratePillStyleCard1 = true
     /// Cards to study each day for the streak.
     var dailyGoal = AppSettings.defaultDailyGoal
     /// "Grade with the keyboard": keys 1 to 4 in the open notch. Off by default, because it means the
@@ -49,7 +54,9 @@ struct AppSettings: Codable, Equatable, Sendable {
         showsOnExternalDisplays: Bool = false,
         hidesInFullScreen: Bool = true,
         onlyOnActiveDisplay: Bool = false,
-        pillStyle: PillStyle = .classic,
+        pillStyle: PillStyle = .default,
+        notchFlipInterval: NotchFlipInterval = .default,
+        didMigratePillStyleCard1: Bool = true,
         dailyGoal: Int = AppSettings.defaultDailyGoal,
         keyboardGrading: Bool = false,
         offersCardFromCopy: Bool = false,
@@ -65,6 +72,8 @@ struct AppSettings: Codable, Equatable, Sendable {
         self.hidesInFullScreen = hidesInFullScreen
         self.onlyOnActiveDisplay = onlyOnActiveDisplay
         self.pillStyle = pillStyle
+        self.notchFlipInterval = notchFlipInterval
+        self.didMigratePillStyleCard1 = didMigratePillStyleCard1
         self.dailyGoal = max(dailyGoal, 1)
         self.keyboardGrading = keyboardGrading
         self.offersCardFromCopy = offersCardFromCopy
@@ -83,7 +92,10 @@ struct AppSettings: Codable, Equatable, Sendable {
         showsOnExternalDisplays = try container.decodeIfPresent(Bool.self, forKey: .showsOnExternalDisplays) ?? false
         hidesInFullScreen = try container.decodeIfPresent(Bool.self, forKey: .hidesInFullScreen) ?? true
         onlyOnActiveDisplay = try container.decodeIfPresent(Bool.self, forKey: .onlyOnActiveDisplay) ?? false
+        // A file without a style was written when Classic was the only one; the migration moves it on.
         pillStyle = try container.decodeIfPresent(PillStyle.self, forKey: .pillStyle) ?? .classic
+        notchFlipInterval = try container.decodeIfPresent(NotchFlipInterval.self, forKey: .notchFlipInterval) ?? .default
+        didMigratePillStyleCard1 = try container.decodeIfPresent(Bool.self, forKey: .didMigratePillStyleCard1) ?? false
         dailyGoal = max(try container.decodeIfPresent(Int.self, forKey: .dailyGoal) ?? Self.defaultDailyGoal, 1)
         keyboardGrading = try container.decodeIfPresent(Bool.self, forKey: .keyboardGrading) ?? false
         offersCardFromCopy = try container.decodeIfPresent(Bool.self, forKey: .offersCardFromCopy) ?? false

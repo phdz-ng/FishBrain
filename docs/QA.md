@@ -655,3 +655,30 @@ Checked in a Debug build with `-FishBrainSampleData -FishBrainSkipWelcome -FishB
   light and with a dark menu bar.
 - [ ] Update from 1.0 with Indigo saved: opens in light with Orange; with Teal saved: light with Teal.
   Switch to Dark and Indigo, quit and reopen: they stay.
+
+## Editing in the Now showing preview (FLAS-84), to check by hand
+
+A Debug build with `-FishBrainSampleData -FishBrainSkipWelcome`. Covered by tests: the edit model (save, trim,
+empty front, cancel, every discard), undo, the row's draft, the panel's height and the field's VoiceOver
+label. The rest needs a person.
+
+- **Mouse.** Hover the card: a pencil replaces 3/4 (tooltip "Double-click to edit"), the text gets a light
+  highlight, and the pointer is an I-beam over the text only. Click once: the card flips after a short pause.
+  Double-click the text: it becomes a field with the caret at the end, the card has an accent outline, the
+  label reads "Editing card", the bar reads "Timer paused while editing", Cancel and Save replace the grade
+  buttons and nothing moves. Double-click away from the text: one flip, no editing.
+- **Trackpad**, with tap to click on and off: the same as the mouse, including a double tap on the text.
+- **Typing.** Return saves; Shift+Return adds a line; Esc cancels. Clear the front and press Return: the field
+  gets a red outline and stays open. Clear the back and save: allowed. "  hola  " saves as "hola".
+- **Held card.** Start editing with under 10 s left on the countdown and wait: the preview keeps the card while
+  the notch and widget move on. Save: the preview shows the live card and its countdown.
+- **Table.** While typing, the card's row shows the draft in the accent color and scrolls into view. Cancel: the
+  row goes back. Save, then ⌘Z: the old text is back; ⇧⌘Z: the edit again. Click into any row while editing:
+  the preview's draft is gone and the card has its saved text.
+- **Leaving.** Mid-edit, pick another deck, a subject, Learn, Review, close the window, quit: each time the
+  card keeps its saved text, with no prompt. Delete the card in the table mid-edit: editing ends.
+- **Keyboard only** (System Settings ▸ Keyboard ▸ Keyboard navigation on): Tab reaches the card; Space flips;
+  Return edits the side showing; Return saves and Esc cancels. Right-click the card: Flip and Edit Front (or
+  Edit Back when flipped).
+- **VoiceOver.** The card's hint is "Flips the card. Actions available."; VO-Command-Space lists Edit card.
+  In the field VoiceOver reads "Front, text field" (or "Back"), and says "Saved" or "Cancelled" afterwards.

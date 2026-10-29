@@ -141,8 +141,20 @@ final class NotchModel: ObservableObject {
     @Published var notchWidth: CGFloat = 185
     /// False where FishBrain draws the notch itself: nothing sits in the middle, so the content does.
     @Published var hasCamera = true
-    /// What a drawn notch shows at rest; a real notch always shows Classic.
-    @Published var pillStyle: PillStyle = .classic
+    /// The chosen style. A drawn notch shows it at rest; a real notch shows Card or Classic.
+    @Published var pillStyle: PillStyle = .default
+    /// "Flip every" for the Card style.
+    @Published var flipInterval: NotchFlipInterval = .default
+    /// When the resting card started on its front: a new card arrived or the notch closed. The
+    /// resting flip counts from here.
+    @Published var restStartedAt = Date()
+    /// Where the Card style puts the text on this display.
+    @Published var cardLayout: CardRestLayout = .drawn
+    /// The deck's color when the deck has no cards, so the Card style can show its icon.
+    @Published var emptyDeckColor: DeckColor?
+    /// False while the panel isn't on screen (the display sleeps, the screen is locked, it is
+    /// covered), so nothing at rest animates then.
+    @Published var restIsVisible = true
     /// Today's count, the goal, the streak and this week; nil where nothing tracks studying.
     @Published var study: StudySummary?
     /// The study session: running, just ended (the recap), or nothing.
@@ -172,12 +184,16 @@ final class NotchModel: ObservableObject {
     /// countdown only exists while this is true, so a collapsed notch costs nothing.
     @Published var showsExpandedContent = false
 
-    /// What a drawn notch draws at rest: a session takes the pill over for as long as it runs and
-    /// while its recap shows, whatever style is chosen. A real notch always shows Classic.
+    /// What the notch draws at rest. On a drawn notch a session takes the pill over for as long as it
+    /// runs and while its recap shows, whatever style is chosen. A real notch shows Card when Card is
+    /// chosen, and Classic otherwise.
     var restStyle: PillStyle {
-        guard !hasCamera else { return .classic }
+        guard !hasCamera else { return PillStyle.onRealNotch(pillStyle) }
         return session == .idle ? pillStyle : .session
     }
+
+    /// Whatever rests in the notch may animate: it is closed and on screen.
+    var restIsActive: Bool { !isExpanded && restIsVisible }
 
     var onAcceptOffer: () -> Void = {}
     var onSaveDraft: () -> Void = {}
@@ -199,6 +215,8 @@ final class NotchModel: ObservableObject {
 struct FlipView<Front: View, Back: View>: View, Animatable {
     var angle: Double
     var style: NotchCard.FlipStyle = .rotate
+    /// The axis it turns about: vertical for the open card, horizontal for the resting Card notch.
+    var axis: (x: CGFloat, y: CGFloat, z: CGFloat) = (x: 0, y: 1, z: 0)
     var front: Front
     var back: Back
 
@@ -214,9 +232,9 @@ struct FlipView<Front: View, Back: View>: View, Animatable {
             ZStack {
                 front.opacity(opacities.front)
                 // Turned the other way round, so the back reads correctly once the card has flipped.
-                back.rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0)).opacity(opacities.back)
+                back.rotation3DEffect(.degrees(180), axis: axis).opacity(opacities.back)
             }
-            .rotation3DEffect(.degrees(angle), axis: (x: 0, y: 1, z: 0), perspective: 0.5)
+            .rotation3DEffect(.degrees(angle), axis: axis, perspective: 0.5)
         case .crossfade:
             ZStack {
                 front.opacity(opacities.front)
@@ -296,8 +314,9 @@ struct NotchRootView: View {
         } else if let showing = model.showing {
             PillRestContent(
                 style: model.restStyle, showing: showing, hasCamera: model.hasCamera, notchWidth: model.notchWidth,
-                nextRotation: model.nextRotation, isActive: !model.isExpanded, study: model.study,
-                session: model.session, lastSession: model.lastSession, rotationInterval: model.rotationInterval
+                nextRotation: model.nextRotation, isActive: model.restIsActive, study: model.study,
+                session: model.session, lastSession: model.lastSession, rotationInterval: model.rotationInterval,
+                cardLayout: model.cardLayout, flipInterval: model.flipInterval, restStartedAt: model.restStartedAt
             )
             // Hovering is the mouse's way in; VoiceOver users get the same through an action.
             .accessibilityElement(children: .ignore)
@@ -305,6 +324,14 @@ struct NotchRootView: View {
             .accessibilityHint("Opens the study card")
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { model.onToggleExpanded() }
+        } else if model.restStyle == .card, let color = model.emptyDeckColor {
+            // A deck with no cards yet: its icon, and nothing to flip.
+            CardPillContent(card: nil, deckColor: color, layout: model.cardLayout, notchWidth: model.notchWidth)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Card: no cards in this deck")
+                .accessibilityHint("Opens the study card")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { model.onToggleExpanded() }
         }
     }
 
@@ -313,6 +340,8 @@ struct NotchRootView: View {
     private var clockNow: Date { Date() }
 
     private func restingAccessibilityLabel(_ showing: NowShowing) -> String {
+        // The front only, so the flip is never announced.
+        if model.restStyle == .card { return NotchCardRest.accessibilityLabel(for: showing.card) }
         if !model.hasCamera {
             switch model.session {
             case .running(let info):
@@ -564,12 +593,32 @@ final class NotchController {
     var collapsedFrame: CGRect? { placementProvider().map(collapsedFrame(for:)) }
 
     /// A real notch gets a wing either side of the camera; a drawn pill is as wide as its content.
+    /// The Card style is the size of a real notch where it is drawn, and puts the text in a wider
+    /// left wing beside a real camera. An offer takes over either, as before.
     private func collapsedFrame(for placement: NotchPlacement) -> CGRect {
-        placement.hasNotch
-            ? placement.alignedCollapsedFrame(wing: wing)
-            : placement.alignedDrawnFrame(width: model.banner != nil
-                ? NotchGeometry.bannerRestWidth
-                : NotchGeometry.drawnWidth(forPositionText: model.showing?.positionText, style: model.restStyle))
+        let isCard = model.banner == nil && restStyle(for: placement) == .card
+        if placement.hasNotch {
+            guard isCard else { return placement.alignedCollapsedFrame(wing: wing) }
+            return cardLayout(for: placement) == .besideCamera
+                ? placement.alignedSnugFrame()
+                : placement.alignedCollapsedFrame(wing: NotchGeometry.collapsedWing)
+        }
+        if isCard { return placement.alignedCardFrame() }
+        return placement.alignedDrawnFrame(width: model.banner != nil
+            ? NotchGeometry.bannerRestWidth
+            : NotchGeometry.drawnWidth(forPositionText: model.showing?.positionText, style: model.restStyle))
+    }
+
+    /// `model.restStyle` for this placement (the model's `hasCamera` may not have caught up yet).
+    private func restStyle(for placement: NotchPlacement) -> PillStyle {
+        guard !placement.hasNotch else { return PillStyle.onRealNotch(model.pillStyle) }
+        return model.restStyle
+    }
+
+    /// Beside a camera with no card to show, only the deck color shows, so the wing stays narrow.
+    private func cardLayout(for placement: NotchPlacement) -> CardRestLayout {
+        let layout = placement.cardLayout
+        return layout == .besideCamera && model.showing == nil ? .deckOnly : layout
     }
 
     var expandedFrame: CGRect? {
@@ -638,7 +687,31 @@ final class NotchController {
                 MainActor.assumeIsolated { self?.refreshContent() }
             })
         }
+        // Nothing at rest animates while the panel can't be seen: the display asleep, the screen
+        // locked or the panel covered (both show up as the panel no longer being visible).
+        let workspace = NSWorkspace.shared.notificationCenter
+        timeObservers.append((NotificationCenter.default, NotificationCenter.default.addObserver(
+            forName: NSWindow.didChangeOcclusionStateNotification, object: panel, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.updateRestVisibility() }
+        }))
+        for (name, asleep) in [(NSWorkspace.screensDidSleepNotification, true), (NSWorkspace.screensDidWakeNotification, false)] {
+            timeObservers.append((workspace, workspace.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.screensAsleep = asleep
+                    self?.updateRestVisibility()
+                }
+            }))
+        }
         applyVisibility()
+    }
+
+    private var screensAsleep = false
+
+    private func updateRestVisibility() {
+        guard let panel else { return }
+        let visible = !screensAsleep && (!showsPanel || panel.occlusionState.contains(.visible))
+        if model.restIsVisible != visible { model.restIsVisible = visible }
     }
 
     func stop() {
@@ -747,7 +820,16 @@ final class NotchController {
         let state = active?.playback ?? deck.map { playbackStoreProvider().state(for: $0.id) } ?? PlaybackState()
         let showing = deck.flatMap { NowShowing.make(deck: $0, state: state, at: date, scheduler: scheduler) }
 
+        // A new card (rotation, skip, a grade, another deck) always starts on its front.
+        if model.showing?.card.id != showing?.card.id || model.showing?.deckID != showing?.deckID { model.restStartedAt = date }
         if model.showing != showing { model.showing = showing }
+        let emptyColor = showing == nil ? deck?.color : nil
+        if model.emptyDeckColor != emptyColor { model.emptyDeckColor = emptyColor }
+        let interval = settingsStoreProvider().notchFlipInterval
+        if model.flipInterval != interval {
+            model.flipInterval = interval
+            model.restStartedAt = date
+        }
         let next = scheduler.nextRotation(after: date)
         if model.nextRotation != next { model.nextRotation = next }
         if model.rotationInterval != scheduler.interval { model.rotationInterval = scheduler.interval }
@@ -848,6 +930,8 @@ final class NotchController {
         guard let panel, let placement = placementProvider() else { return }
         let collapsed = collapsedFrame(for: placement)
         model.hasCamera = placement.hasNotch
+        let layout = cardLayout(for: placement)
+        if model.cardLayout != layout { model.cardLayout = layout }
         model.collapsedSize = collapsed.size
         model.notchWidth = placement.notchFrame.width
         model.notchHeight = placement.notchFrame.height
@@ -1051,6 +1135,7 @@ final class NotchController {
             guard !Task.isCancelled, let self, !self.model.isExpanded else { return }
             self.panel?.ignoresMouseEvents = true
             self.model.showsExpandedContent = false // stops the countdown ticking
+            self.model.restStartedAt = self.clock() // back at rest: the front, and the count starts again
             self.reposition()
             self.updateMousePassthrough() // an offer may be waiting to be clicked
         }

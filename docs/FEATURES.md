@@ -119,6 +119,27 @@ keep following the normal 5-minute rotation, which carries on untouched afterwar
 from the start date, so a Mac that sleeps through the end shows the recap on wake. A card flipped to
 its answer in a session counts toward the daily goal like any other flip.
 
+## Editing in the Now showing preview
+
+Double-click the text on the Now showing card to edit the side that is showing, right there. A single
+click still flips the card; it waits out the system double-click interval (about a quarter of a second)
+first, so a double click can call it off.
+
+The rotation can't be paused: `CardScheduler` works out the live card from the clock, and the widget and
+notch read the same state from the app group. So `PreviewCardEdit` holds the card in the preview only,
+while the widget and notch carry on. Nothing in `playback.json` changes because of editing, and grading
+and Skip are off until editing ends.
+
+Only Save keeps an edit. It trims the text, refuses an empty front (an empty back is fine, as in the
+table), and writes through `DeckStore.setText` as one undo step ("Edit Card"), changing nothing else on
+the card. Esc or Cancel keeps the saved text. Anything else throws the draft away with no prompt: another
+deck or a subject, Learn, a sprint, closing the window, quitting, clicking into the card table, or the
+card being deleted. While editing, the card's row in the table shows the draft in the accent color.
+
+The field is an `NSTextView` (`PreviewTextField`) so it can center its lines in the card's own font and
+tell Return (save) from Shift+Return (new line); Esc cancels. Typing has its own undo inside the field.
+Text only: pictures are still added and changed in the table.
+
 ## Accessibility
 
 - **Keyboard**: New Deck (⌘N), New Subject (⇧⌘N), Add Card (⌥⌘N), Find Cards (⌘F), all in the menus; Up and Down move between
@@ -127,6 +148,10 @@ its answer in a session counts toward the daily goal like any other flip.
   48 cards", and card faces read the front, or "Answer, ..." once flipped, in the app, the widgets and the
   notch. The notch can't be hovered with VoiceOver, so its resting state is a button ("Everyday Spanish,
   card 12 of 48") whose action opens it, and the open card has a "Close card" action.
+- **Editing the Now showing card without a double click**: Tab to the card (with Full Keyboard Access),
+  then Return edits the side showing and Space flips; VoiceOver has an **Edit card** action next to the
+  flip; the right-click menu has Flip and Edit Front or Edit Back. The field reads "Front, text field" or
+  "Back, text field", and VoiceOver hears "Saved" or "Cancelled" when editing ends.
 - **Reduce Motion**: the notch flip becomes a crossfade and the notch no longer springs open.
 - **Contrast**: text meets WCAG AA (4.5:1) in light (with every accent) and dark; `DesignTokensTests` checks every text and
   surface pair, and a lint fails if an icon has no label.

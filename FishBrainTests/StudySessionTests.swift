@@ -330,6 +330,8 @@ final class SessionNotchTests: XCTestCase {
     func testStartingASessionTakesOverTheDrawnPillWhateverTheStyle() throws {
         var t = now
         let rig = try makeRig { t }
+        rig.settings.pillStyle = .classic
+        rig.controller.refreshContent()
         XCTAssertEqual(rig.controller.model.restStyle, .classic)
         let classicWidth = try XCTUnwrap(rig.controller.collapsedFrame).width
 
@@ -353,6 +355,9 @@ final class SessionNotchTests: XCTestCase {
         let rig = try makeRig(drawn: false) { self.now }
         rig.controller.model.onStartSession(5)
         XCTAssertEqual(rig.controller.model.session != .idle, true)
+        XCTAssertEqual(rig.controller.model.restStyle, .card, "Card, the default, stays beside the camera")
+        rig.settings.pillStyle = .classic
+        rig.controller.refreshContent()
         XCTAssertEqual(rig.controller.model.restStyle, .classic)
     }
 

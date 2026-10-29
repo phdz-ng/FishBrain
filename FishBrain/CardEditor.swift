@@ -30,6 +30,8 @@ struct CardEditor: View {
     var onAddCard: () -> Void
     var onPasteCards: (() -> Void)?
     var onImportCSV: (() -> Void)?
+    /// An edit in the Now showing preview: its row shows the draft, and clicking into the table ends it.
+    @ObservedObject var previewEdit = PreviewCardEdit()
 
     enum Field: Hashable {
         case front(Card.ID)
@@ -84,8 +86,9 @@ struct CardEditor: View {
                 List(selection: $selection) {
                     ForEach(deck.cards) { card in
                         CardRow(
-                            front: binding(card.id, \.front),
-                            back: binding(card.id, \.back),
+                            front: binding(card.id, .front),
+                            back: binding(card.id, .back),
+                            previewDraftSide: previewEdit.draft?.cardID == card.id ? previewEdit.draft?.side : nil,
                             frontImage: card.frontImage,
                             backImage: card.backImage,
                             status: CardStatus(state.review(for: card.id), at: now),
@@ -124,6 +127,17 @@ struct CardEditor: View {
                     CommandCenter.shared.pastePicture = field.map { field in
                         { pastePicture(for: field) }
                     }
+                    // A card is never edited in two places: clicking into the table ends the preview's
+                    // edit, unsaved.
+                    if field != nil { previewEdit.discard() }
+                }
+                .onChange(of: selection) { _, picked in
+                    if !picked.isEmpty { previewEdit.discard() }
+                }
+                // The row being edited in the preview is kept in view.
+                .onChange(of: previewEdit.draft?.cardID) { _, id in
+                    guard let id else { return }
+                    withAnimation { proxy.scrollTo(id) }
                 }
                 .onDisappear { CommandCenter.shared.pastePicture = nil }
                 .onChange(of: highlightedCardID, initial: true) { _, id in
@@ -164,10 +178,11 @@ struct CardEditor: View {
         }
     }
 
-    private func binding(_ id: Card.ID, _ keyPath: WritableKeyPath<Card, String>) -> Binding<String> {
+    /// A side's text; while that side is being edited in the preview, its draft.
+    private func binding(_ id: Card.ID, _ side: CardSide) -> Binding<String> {
         Binding(
-            get: { store.card(id, in: deck.id)?[keyPath: keyPath] ?? "" },
-            set: { newValue in store.updateCard(id, in: deck.id) { $0[keyPath: keyPath] = newValue } }
+            get: { previewEdit.draftText(for: id, side: side) ?? store.card(id, in: deck.id)?.text(on: side) ?? "" },
+            set: { newValue in store.updateCard(id, in: deck.id) { $0.setText(newValue, on: side) } }
         )
     }
 
@@ -195,6 +210,8 @@ struct CardEditor: View {
 private struct CardRow: View {
     @Binding var front: String
     @Binding var back: String
+    /// The side being edited in the preview, shown in the accent color.
+    var previewDraftSide: CardSide?
     var frontImage: CardImage?
     var backImage: CardImage?
     var status: CardStatus
@@ -210,14 +227,16 @@ private struct CardRow: View {
     private var frontField: some View {
         CardSideField(
             side: .front, text: $front, image: frontImage, cardID: cardID, deckID: deckID,
-            focus: focus, showsAddPicture: isHovering, onSubmit: { focus.wrappedValue = .back(cardID) }
+            focus: focus, showsAddPicture: isHovering, isPreviewDraft: previewDraftSide == .front,
+            onSubmit: { focus.wrappedValue = .back(cardID) }
         )
     }
 
     private var backField: some View {
         CardSideField(
             side: .back, text: $back, image: backImage, cardID: cardID, deckID: deckID,
-            focus: focus, showsAddPicture: isHovering, onSubmit: onSubmitBack
+            focus: focus, showsAddPicture: isHovering, isPreviewDraft: previewDraftSide == .back,
+            onSubmit: onSubmitBack
         )
     }
 
@@ -285,9 +304,12 @@ private struct CardSideField: View {
     var deckID: Deck.ID
     var focus: FocusState<CardEditor.Field?>.Binding
     var showsAddPicture: Bool
+    /// Being edited in the Now showing preview: the draft shows here, in the accent color.
+    var isPreviewDraft = false
     var onSubmit: () -> Void
 
     @EnvironmentObject private var store: DeckStore
+    @Environment(\.accentChoice) private var accent
     @State private var isDropTarget = false
     @State private var failure: String?
 
@@ -297,7 +319,7 @@ private struct CardSideField: View {
         HStack(spacing: 8) {
             TextField(label, text: $text, axis: .vertical)
                 .font(side == .front ? Theme.Typography.body.weight(.semibold) : Theme.Typography.body)
-                .foregroundStyle(side == .front ? Theme.TextColor.primary : Theme.TextColor.cardBack)
+                .foregroundStyle(isPreviewDraft ? accent.light : side == .front ? Theme.TextColor.primary : Theme.TextColor.cardBack)
                 .focused(focus, equals: side == .front ? .front(cardID) : .back(cardID))
                 .onSubmit(onSubmit)
                 .accessibilityLabel(label)

@@ -43,6 +43,10 @@ final class SettingsStore: ObservableObject {
     @Published var pillStyle: PillStyle {
         didSet { if pillStyle != oldValue { save(reloadsWidgets: false) } }
     }
+    /// "Flip every" for the Card notch.
+    @Published var notchFlipInterval: NotchFlipInterval {
+        didSet { if notchFlipInterval != oldValue { save(reloadsWidgets: false) } }
+    }
     /// Cards to study each day for the streak.
     @Published var dailyGoal: Int {
         didSet {
@@ -82,7 +86,10 @@ final class SettingsStore: ObservableObject {
     ) {
         self.storage = storage
         self.onSaved = onSaved
-        let (loaded, migratedLightTheme) = LightThemeMigration.apply(storage.load())
+        // Two one-time migrations, each with its own flag: light themes, then Classic to Card.
+        let (migrated, migratedLightTheme) = LightThemeMigration.apply(storage.load())
+        var loaded = migrated
+        let migratedPillStyle = loaded.migratePillStyleToCard()
         self.accent = loaded.accent
         self.appearance = loaded.appearance
         self.showsNotch = loaded.showsNotch
@@ -93,12 +100,14 @@ final class SettingsStore: ObservableObject {
         self.hidesInFullScreen = loaded.hidesInFullScreen
         self.onlyOnActiveDisplay = loaded.onlyOnActiveDisplay
         self.pillStyle = loaded.pillStyle
+        self.notchFlipInterval = loaded.notchFlipInterval
         self.dailyGoal = loaded.dailyGoal
         self.keyboardGrading = loaded.keyboardGrading
         self.offersCardFromCopy = loaded.offersCardFromCopy
         self.ai = loaded.ai
         self.reviewMinutes = loaded.reviewMinutes
-        if migratedLightTheme { save(reloadsWidgets: true) }
+        // The light theme changes what the widget draws; the pill style does not.
+        if migratedLightTheme || migratedPillStyle { save(reloadsWidgets: migratedLightTheme) }
     }
 
     /// What decides which displays get a notch.
@@ -116,6 +125,8 @@ final class SettingsStore: ObservableObject {
                 gettingStartedHandled: gettingStartedHandled, hasSeenWelcome: hasSeenWelcome,
                 showsOnExternalDisplays: showsOnExternalDisplays, hidesInFullScreen: hidesInFullScreen,
                 onlyOnActiveDisplay: onlyOnActiveDisplay, pillStyle: pillStyle,
+                // The Card migration always ran in init, so a save records it as done.
+                notchFlipInterval: notchFlipInterval, didMigratePillStyleCard1: true,
                 dailyGoal: dailyGoal, keyboardGrading: keyboardGrading,
                 offersCardFromCopy: offersCardFromCopy, ai: ai, reviewMinutes: reviewMinutes
             )

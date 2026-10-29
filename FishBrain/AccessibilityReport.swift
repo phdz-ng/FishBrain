@@ -60,7 +60,10 @@ enum AccessibilityReport {
         let title = object.accessibilityTitle?() ?? nil
         let value = object.accessibilityValue?().flatMap { "\($0)" }
         let hidden = (object.isAccessibilityElement?() ?? true) == false && depth > 0
-        let text = [label, title].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " / ")
+        // Named actions, like the Now showing card's "Edit card".
+        let actions = (object.accessibilityCustomActions?() ?? nil)?.map(\.name) ?? []
+        let text = ([label, title].compactMap { $0 } + actions.map { "action: \($0)" })
+            .filter { !$0.isEmpty }.joined(separator: " / ")
         if !text.isEmpty || (value?.isEmpty == false) || role == "Button" || role == "CheckBox" || role == "PopUpButton" || role == "MenuButton" {
             let pad = String(repeating: "  ", count: min(depth, 8))
             Swift.print("\(pad)[\(role.isEmpty ? "?" : role)] \(text)\(value.map { $0.isEmpty ? "" : "  = \($0)" } ?? "")\(hidden ? "  (not an element)" : "")")
