@@ -628,3 +628,30 @@ Do this on a Mac that has Numbers (or Excel) and, ideally, Anki installed.
   FishBrain: cards, structure and pictures arrive; the result lists what was skipped.
 - **Nothing is uploaded.** Turn Wi-Fi off and repeat an export and an import: both work.
 
+## Light themes (FLAS-79 to FLAS-83), to check by hand
+
+Checked in a Debug build with `-FishBrainSampleData -FishBrainSkipWelcome -FishBrainAppearance <light|dark|system>
+-FishBrainAccent <orange|indigo|blue|purple|teal>` (the last two are Debug-only, for screenshots):
+
+- [x] Main window in light with Orange and with Teal, and in dark with Orange: sidebar tint, white text on
+  the selected row and on Review, the sun/moon button between Review and Add, Now showing, grade buttons,
+  status chips, the switch and the countdown bar.
+- [ ] Subject page, Learn, Review sprint setup and results, Create with AI, import and export sheets,
+  Settings (Appearance tiles, five accent swatches), welcome sheet: in light with Orange and one other
+  accent, and in dark with Orange.
+- [ ] The toolbar button: menu opens with a check on the current choice, the button turns accent while it
+  is open, Esc and a click outside close it, choosing applies at once. VoiceOver reads "Appearance" and
+  "Light" / "Dark" / "Match system, now light".
+- [ ] Make the window narrow: the button moves into the ⋯ menu as Appearance ▸ before the toolbar wraps.
+- [ ] View ▸ Appearance shows a check on the current choice and stays in step with the button and Settings.
+- [ ] Match system: switch the Mac between light and dark (System Settings > Appearance) with FishBrain
+  open; the window and the button's icon follow.
+- [ ] Window glass over a dark photo, a bright one and a busy one: text stays readable in light.
+- [ ] Reduce Transparency and Increase Contrast (System Settings > Accessibility > Display): solid
+  surfaces and stronger hairlines in light and dark.
+- [ ] Widget in all three sizes, front, flipped and empty, in light and dark; in the tinted/accented
+  widget mode and dimmed in the background on the desktop.
+- [ ] Notch: black with light text with the app in light. A Mac without a notch (drawn notch) with a
+  light and with a dark menu bar.
+- [ ] Update from 1.0 with Indigo saved: opens in light with Orange; with Teal saved: light with Teal.
+  Switch to Dark and Indigo, quit and reopen: they stay.

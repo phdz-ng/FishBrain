@@ -1,6 +1,28 @@
 # How the features work
 
-Notes on copy to card, sharing decks, pictures, grading and reviews, the streak and accessibility. Back to the [README](../README.md).
+Notes on light and dark, copy to card, sharing decks, pictures, grading and reviews, the streak and accessibility. Back to the [README](../README.md).
+
+## Light and dark
+
+FishBrain has one light look ("Tangerine and white": white window and cards, a sidebar tinted by the
+accent) and the original dark one. **Light** with the **Orange** accent is the default. Switch with the
+round sun/moon button in a deck's or subject's toolbar (between Review and the menus; at narrow widths it
+moves into the ⋯ menu as **Appearance ▸**), with **View ▸ Appearance**, or with the tiles at the top of
+Settings > General. **Match system** follows the Mac, and the button shows a sun or a moon for whichever is
+on screen. The accent (Orange, Indigo, Blue, Purple, Teal) applies in both.
+
+- **Tokens.** Every color in `Theme.swift` is a `Token` with a dark and a light `Swatch`; views draw it as a
+  SwiftUI style and it picks the value from the environment's color scheme, so no view knows which
+  appearance is on. Text and glyphs on an accent or deck fill use `TextColor.onAccent` (white in both).
+- **Applying it.** `AppearanceController` sets `NSApp.appearance` from the setting (nil for Match system),
+  so every window, sheet, menu and alert follows at once. The notch panel is always dark (black, like the
+  hardware), whatever the setting.
+- **Widget.** The setting is in the shared `settings.json`; the widget forces Light or Dark while it draws
+  in full color, and leaves the colors to macOS in the tinted and dimmed desktop modes.
+- **Glass.** Surface tints are `.glass` tokens: solid with Reduce Transparency or Increase Contrast, and
+  hairlines get stronger with Increase Contrast.
+- **The update.** `LightThemeMigration` runs once (recorded as `didMigrateLightTheme1` in the settings):
+  it sets everyone to Light and moves Indigo, the old default, to Orange. Blue, Purple and Teal are kept.
 
 ## Cards from what you copy
 
@@ -106,6 +128,6 @@ its answer in a session counts toward the daily goal like any other flip.
   notch. The notch can't be hovered with VoiceOver, so its resting state is a button ("Everyday Spanish,
   card 12 of 48") whose action opens it, and the open card has a "Close card" action.
 - **Reduce Motion**: the notch flip becomes a crossfade and the notch no longer springs open.
-- **Contrast**: text meets WCAG AA (4.5:1) in the dark theme; `DesignTokensTests` checks every text and
+- **Contrast**: text meets WCAG AA (4.5:1) in light (with every accent) and dark; `DesignTokensTests` checks every text and
   surface pair, and a lint fails if an icon has no label.
 - `-FishBrainPrintAccessibility` (Debug) prints the notch's accessibility tree, resting and open.
