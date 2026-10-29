@@ -161,6 +161,7 @@ final class NotchControllerTests: XCTestCase {
     /// A controller wired to throwaway stores in a temp folder, never to the real library.
     private func makeRig(
         decks: [Deck] = [],
+        pillStyle: PillStyle = .default,
         displays: @escaping @MainActor () -> [ScreenMetrics],
         monitors: Bool = false,
         expandDelay: Duration = .milliseconds(10),
@@ -171,6 +172,7 @@ final class NotchControllerTests: XCTestCase {
         let deckStore = DeckStore(storage: DeckStorage(directory: root), debounce: .milliseconds(5), onSaved: {})
         let playback = PlaybackStore(storage: PlaybackStorage(directory: root), onSaved: {})
         let settings = SettingsStore(storage: SettingsStorage(directory: root), onSaved: {})
+        settings.pillStyle = pillStyle
         let controller = NotchController(
             placementProvider: {
                 let screens = displays()
@@ -392,7 +394,7 @@ final class NotchControllerTests: XCTestCase {
     }
 
     func testTheRestingPanelGrowsForLongPositions() throws {
-        let rig = try makeRig(decks: [sampleDeck(cards: 200)]) { [notched] in [notched] }
+        let rig = try makeRig(decks: [sampleDeck(cards: 200)], pillStyle: .classic) { [notched] in [notched] }
         rig.controller.start()
         rig.controller.refreshContent(at: Date(timeIntervalSince1970: 99 * 300)) // "100/200"
         let wide = try XCTUnwrap(rig.controller.panel?.frame.width)

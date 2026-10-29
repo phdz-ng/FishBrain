@@ -176,6 +176,33 @@ private struct GeneralSettingsTab: View {
     }
 }
 
+/// "Flip every", under the style picker while Card is picked.
+struct NotchFlipIntervalRow: View {
+    @Binding var selection: NotchFlipInterval
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Flip every")
+                    .font(Theme.Typography.rowTitle)
+                    .foregroundStyle(Theme.TextColor.primary)
+                Text("How long the card shows each side before it turns over. Off shows the front only. It only changes what the notch shows: it doesn't count as studying.")
+                    .font(Theme.Typography.footnote)
+                    .foregroundStyle(Theme.TextColor.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            Picker("Flip every", selection: $selection) {
+                ForEach(NotchFlipInterval.choices, id: \.self) { Text($0.displayName).tag($0) }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .fixedSize()
+            .accessibilityLabel("Flip every")
+        }
+    }
+}
+
 private struct NotchSettingsTab: View {
     @EnvironmentObject private var settings: SettingsStore
     @ObservedObject private var displays = NotchDisplayManager.shared
@@ -202,7 +229,10 @@ private struct NotchSettingsTab: View {
                 detail: "Shows it on the display you are working on and moves with you. Off shows it on every enabled display.",
                 isOn: $settings.onlyOnActiveDisplay
             )
-            PillStylePicker(selection: $settings.pillStyle, hasDrawnNotch: displays.hasDrawnNotch)
+            PillStylePicker(selection: $settings.pillStyle, hasDrawnNotch: displays.hasDrawnNotch, flipInterval: settings.notchFlipInterval)
+            if settings.pillStyle == .card {
+                NotchFlipIntervalRow(selection: $settings.notchFlipInterval)
+            }
             Text("\"Show in notch\" in the sidebar turns all of it on or off.")
                 .font(Theme.Typography.footnote)
                 .foregroundStyle(Theme.TextColor.secondary)

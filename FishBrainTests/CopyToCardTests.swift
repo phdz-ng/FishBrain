@@ -437,7 +437,14 @@ final class CopyToCardNotchTests: XCTestCase {
         rig.copy.offer(text: "sin embargo", at: now)
         rig.controller.refreshContent()
         let after = try XCTUnwrap(rig.controller.collapsedFrame).width
-        XCTAssertGreaterThanOrEqual(after, before, "room for '+ Card'")
+        let notched = ScreenMetrics(
+            frame: CGRect(x: 0, y: 0, width: 1710, height: 1107), visibleFrame: CGRect(x: 0, y: 0, width: 1710, height: 1073.5),
+            safeAreaTop: 33.5, auxiliaryTopLeft: CGRect(x: 0, y: 1073.5, width: 762.5, height: 33.5),
+            auxiliaryTopRight: CGRect(x: 947.5, y: 1073.5, width: 762.5, height: 33.5)
+        )
+        let chip = NotchGeometry.placement(for: notched).alignedCollapsedFrame(wing: NotchGeometry.wing(forPositionText: "+ Card"))
+        XCTAssertEqual(after, chip.width, "room for '+ Card' either side of the camera, whatever the style")
+        XCTAssertNotEqual(after, before, "it takes over the card text beside the camera")
         XCTAssertEqual(rig.controller.model.hasCamera, true)
     }
 

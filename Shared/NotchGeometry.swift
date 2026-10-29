@@ -31,6 +31,9 @@ struct NotchPlacement: Equatable, Sendable {
     /// The real notch on a notched Mac; otherwise a menu-bar-height pill centered at the top.
     var notchFrame: CGRect
     var hasNotch: Bool
+    /// How wide the menu bar's strip left of the camera is (`auxiliaryTopLeft`); nil where there is
+    /// no camera or it can't be measured.
+    var leftStripWidth: CGFloat?
 
     /// A frame of the given size, centered on the notch and flush with the top of the display.
     func frame(size: CGSize) -> CGRect {
@@ -70,7 +73,67 @@ extension NotchPlacement {
     }
 }
 
+extension NotchPlacement {
+    /// The resting Card notch where FishBrain draws it: the size of a real MacBook notch, whatever the
+    /// menu bar's height, so it hangs a little below a 24 pt menu bar the way a real one does. Whole
+    /// points, centered, top flush with the display.
+    func alignedCardFrame(size: CGSize = NotchGeometry.cardRestSize) -> CGRect {
+        let width = size.width.rounded()
+        let height = size.height.rounded()
+        return CGRect(x: (notchFrame.midX - width / 2).rounded(), y: screenFrame.maxY - height, width: width, height: height)
+    }
+
+    /// The resting panel on a real notch with wings of different widths: the card text on the left
+    /// of the camera, the deck color on the right. As tall as the notch (rounded down, top flush).
+    func alignedSnugFrame(
+        leftWing: CGFloat = NotchGeometry.snugTextWing, rightWing: CGFloat = NotchGeometry.collapsedWing
+    ) -> CGRect {
+        let height = notchFrame.height.rounded(.down)
+        let minX = (notchFrame.minX - leftWing).rounded()
+        let maxX = (notchFrame.maxX + rightWing).rounded()
+        return CGRect(x: minX, y: screenFrame.maxY - height, width: maxX - minX, height: height)
+    }
+
+    /// How the Card style fits here: drawn, text beside the camera, or (where the menu bar's left
+    /// strip is too narrow to give up a menu item's width) the deck color only.
+    var cardLayout: CardRestLayout {
+        guard hasNotch else { return .drawn }
+        guard let strip = leftStripWidth, strip >= NotchGeometry.snugMinimumLeftStrip else { return .deckOnly }
+        return .besideCamera
+    }
+}
+
+/// Where the resting Card notch puts the card text.
+enum CardRestLayout: Equatable, Sendable {
+    /// A drawn 200 × 32 notch with the text centered in it.
+    case drawn
+    /// A real notch: the text in a wider wing left of the camera, the deck color on the right.
+    case besideCamera
+    /// A real notch whose menu bar has no room for the wider wing: the deck color only.
+    case deckOnly
+
+    /// The width the text gets, or nil where there is no text.
+    var textWidth: CGFloat? {
+        switch self {
+        case .drawn: NotchGeometry.cardRestSize.width - 2 * NotchGeometry.cardTextPadding
+        case .besideCamera: NotchGeometry.snugTextWing - 2 * NotchGeometry.snugTextPadding
+        case .deckOnly: nil
+        }
+    }
+}
+
 enum NotchGeometry {
+    /// The resting Card notch where FishBrain draws it: the size of a real MacBook notch.
+    static let cardRestSize = CGSize(width: 200, height: 32)
+    /// Padding either side of the card text in the drawn Card notch (176 pt for text).
+    static let cardTextPadding: CGFloat = 12
+    /// The wing left of a real camera that holds the card text ("Snug"), about one menu item wide.
+    static let snugTextWing: CGFloat = 92
+    /// Padding either side of the text in that wing (76 pt for text).
+    static let snugTextPadding: CGFloat = 8
+    /// The narrowest left menu-bar strip that still gives up `snugTextWing` for the card: the Apple
+    /// menu, the app's name and a few menus still fit beside it. Narrower, the wing stays 34 pt.
+    static let snugMinimumLeftStrip: CGFloat = 300
     /// Resting width of a drawn pill showing the deck icon and the position. Kept modest so it stays
     /// clear of app menus on small displays.
     static let drawnRestWidth: CGFloat = 150
@@ -110,7 +173,9 @@ enum NotchGeometry {
                 x = screen.frame.midX - width / 2
             }
             let notch = CGRect(x: x, y: screen.frame.maxY - height, width: width, height: height)
-            return NotchPlacement(screenFrame: screen.frame, notchFrame: notch, hasNotch: true)
+            return NotchPlacement(
+                screenFrame: screen.frame, notchFrame: notch, hasNotch: true, leftStripWidth: screen.auxiliaryTopLeft?.width
+            )
         }
 
         let measured = screen.frame.maxY - screen.visibleFrame.maxY
