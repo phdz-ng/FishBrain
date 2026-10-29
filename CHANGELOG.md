@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **Build your card when importing a CSV.** A CSV, TSV or text import now opens on step 1 of 2, "Build
+  your card": click Front or Back, then click the file's columns to put them on that side (or drag them).
+  A side can take several columns, joined one per line, so the back can show the meaning and an example
+  sentence. Columns named Example, Sentence, Note, Hint, Pronunciation or IPA go on the back
+  automatically. "Skip the first row", the deck name and the deck and subject columns are set here too;
+  step 2 is the preview and where the cards go, with a Back button. Anki imports are unchanged.
+
 ## 1.0
 
 The first release: flashcards that come to you, on the desktop and in the notch.
