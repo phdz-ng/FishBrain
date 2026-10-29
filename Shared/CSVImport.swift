@@ -17,12 +17,12 @@ struct CSVTable: Equatable, Sendable {
 
     var columnCount: Int { rows.map(\.fields.count).max() ?? 0 }
 
-    /// A first row naming the columns, as far as can be told: it says Front or Back (or two of Front, Back,
-    /// Deck and Subject).
+    /// A first row naming the columns, as far as can be told: two of the names the column guess knows (Front,
+    /// Back, Word, Meaning, Example, Deck…), or one in a file of at most two columns.
     var looksLikeHeader: Bool {
         guard let first = rows.first else { return false }
-        let known: Set<String> = ["front", "back", "deck", "subject"]
-        let hits = first.fields.filter { known.contains($0.lowercased()) }
+        let known = CSVColumnMapping.knownNames
+        let hits = first.fields.filter { known.contains($0.trimmingCharacters(in: .whitespaces).lowercased()) }
         return hits.count >= 2 || (first.fields.count <= 2 && !hits.isEmpty)
     }
 
@@ -70,34 +70,49 @@ struct CSVTable: Equatable, Sendable {
     }
 }
 
-/// Which column of the file is which part of a card.
+/// Which column of the file is which part of a card. A side can show several columns, one per line, in
+/// the order listed.
 struct CSVColumnMapping: Equatable, Sendable {
-    var front: Int?
-    var back: Int?
+    var front: [Int] = []
+    var back: [Int] = []
     var deck: Int?
     var subject: Int?
 
-    /// A card needs two different columns for its sides.
-    var isUsable: Bool { front != nil && back != nil && front != back }
+    /// A card needs at least one column on each side, and no column on both.
+    var isUsable: Bool { !front.isEmpty && !back.isEmpty && Set(front).isDisjoint(with: back) }
 
-    private static let frontNames: Set<String> = ["front", "question", "term", "word", "prompt"]
-    private static let backNames: Set<String> = ["back", "answer", "definition", "meaning", "translation"]
+    /// Every column on the card, front first.
+    var cardColumns: [Int] { front + back }
 
-    /// Matched by the header's names, case-insensitively; with none (or no match) the first two columns
-    /// are front and back.
+    static let frontNames: Set<String> = ["front", "question", "term", "word", "prompt"]
+    static let backNames: Set<String> = ["back", "answer", "definition", "meaning", "translation"]
+    /// Columns that add to the back after its main column: an example sentence, a note, how it's said.
+    static let extraBackNames: Set<String> = ["example", "examples", "sentence", "note", "notes", "hint", "pronunciation", "ipa"]
+    /// Every name the guess knows, for telling a row of column names from a row of cards.
+    static let knownNames: Set<String> = frontNames.union(backNames).union(extraBackNames).union(["deck", "subject"])
+
+    /// Matched by the header's names, case-insensitively: one front column, one main back column with any
+    /// extra columns (example, note…) after it in file order, the deck and the subject. With no header, or
+    /// no match, the first free column is the front and the next one the back.
     static func detect(header: [String]?, columnCount: Int) -> CSVColumnMapping {
         var mapping = CSVColumnMapping()
-        for (index, name) in (header ?? []).enumerated() {
-            let key = name.lowercased()
-            if mapping.front == nil, frontNames.contains(key) { mapping.front = index }
-            else if mapping.back == nil, backNames.contains(key) { mapping.back = index }
+        var front: Int?
+        var back: Int?
+        var extras: [Int] = []
+        for (index, name) in (header ?? []).enumerated() where index < columnCount {
+            let key = name.trimmingCharacters(in: .whitespaces).lowercased()
+            if front == nil, frontNames.contains(key) { front = index }
+            else if back == nil, backNames.contains(key) { back = index }
+            else if extraBackNames.contains(key) { extras.append(index) }
             else if mapping.deck == nil, key == "deck" { mapping.deck = index }
             else if mapping.subject == nil, key == "subject" { mapping.subject = index }
         }
-        let taken = Set([mapping.front, mapping.back, mapping.deck, mapping.subject].compactMap { $0 })
+        let taken = Set([front, back, mapping.deck, mapping.subject].compactMap { $0 } + extras)
         var free = (0..<columnCount).filter { !taken.contains($0) }.makeIterator()
-        if mapping.front == nil { mapping.front = free.next() }
-        if mapping.back == nil { mapping.back = free.next() }
+        if front == nil { front = free.next() }
+        if back == nil { back = free.next() }
+        mapping.front = front.map { [$0] } ?? []
+        mapping.back = (back.map { [$0] } ?? []) + extras
         return mapping
     }
 }
@@ -234,7 +249,7 @@ enum CSVImport {
     ) -> CSVImportPlan {
         var plan = CSVImportPlan()
         let mapping = options.mapping
-        guard mapping.isUsable, let frontColumn = mapping.front, let backColumn = mapping.back else { return plan }
+        guard mapping.isUsable else { return plan }
 
         let tree = SubjectTree(library.subjects)
         let context = contextSubjectID.flatMap { tree.subject($0) }?.id
@@ -243,6 +258,11 @@ enum CSVImport {
         func cell(_ row: CSVTable.Row, _ column: Int?) -> String {
             guard let column, column < row.fields.count else { return "" }
             return row.fields[column]
+        }
+
+        /// A side's cells, one per line in the side's order, empty ones left out.
+        func side(_ row: CSVTable.Row, _ columns: [Int]) -> String {
+            columns.map { cell(row, $0) }.filter { !$0.isEmpty }.joined(separator: "\n")
         }
 
         var structure = ImportStructure(library: library, context: context)
@@ -285,8 +305,8 @@ enum CSVImport {
                     plan.preview.append(.init(rowNumber: number, place: "", front: "", back: "", problem: .brokenQuoting))
                 }
             case .row(let row):
-                let front = cell(row, frontColumn)
-                let back = cell(row, backColumn)
+                let front = side(row, mapping.front)
+                let back = side(row, mapping.back)
 
                 // Where it would go, for the preview and for filing.
                 var names: [String] = []
