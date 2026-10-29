@@ -956,9 +956,21 @@ struct DeckContentView: View {
     @EnvironmentObject private var playback: PlaybackStore
     @EnvironmentObject private var study: StudyStore
     @EnvironmentObject private var settings: SettingsStore
+    @EnvironmentObject private var store: DeckStore
     @State private var isPickingColor = false
+    /// Editing the Now showing card in place, shared by the preview and the card table.
+    @StateObject private var previewEdit = PreviewCardEdit()
 
     var body: some View {
+        content
+            // Only Save keeps an edit. Another deck, the card being deleted, or this view going away
+            // (a subject, Learn, a sprint, the window closing) throws the draft away.
+            .onChange(of: deck) { _, deck in previewEdit.endIfStale(deck: deck) }
+            .onDisappear { previewEdit.discard() }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         if let deck {
             VStack(alignment: .leading, spacing: 22) {
                 header(for: deck)
@@ -969,7 +981,8 @@ struct DeckContentView: View {
                         highlightedCardID: highlightedCardID,
                         onAddCard: onAddCard,
                         onPasteCards: onPasteCards,
-                        onImportCSV: onImportCSV
+                        onImportCSV: onImportCSV,
+                        previewEdit: previewEdit
                     )
                     // 300 leaves the 280 pt panel room beside it in a window at its minimum width.
                     .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -1009,7 +1022,9 @@ struct DeckContentView: View {
                     study.refresh()
                 },
                 studySummary: { study.summary(at: $0, goal: settings.dailyGoal) },
-                cardHeight: NowShowingPanel.cardHeight(available: geometry.size.height)
+                cardHeight: NowShowingPanel.cardHeight(available: geometry.size.height),
+                edit: previewEdit,
+                onSave: { previewEdit.save(to: store) }
             )
             ViewThatFits(in: .vertical) {
                 panel
