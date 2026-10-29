@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **Edit a card right on the Now showing preview.** Double-click the card's text to fix the side you see;
+  Return saves (Shift+Return for a new line), Esc cancels, and ⌘Z undoes a save. The preview holds the card
+  while you type, while the widget and the notch keep going. Only Save keeps an edit: going to another deck,
+  starting Learn or a sprint, closing the window or clicking into the card list throws the draft away. A
+  single click still flips the card, a moment later than before. Keyboard and VoiceOver: Return on the
+  focused card or the **Edit card** action; the right-click menu has it too. Text only; pictures are still
+  changed in the card list.
+
 ## 1.0
 
 The first release: flashcards that come to you, on the desktop and in the notch.
