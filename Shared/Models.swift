@@ -47,6 +47,14 @@ struct Card: Identifiable, Hashable, Codable, Sendable {
         if side == .front { frontImage = image } else { backImage = image }
     }
 
+    func text(on side: CardSide) -> String {
+        side == .front ? front : back
+    }
+
+    mutating func setText(_ text: String, on side: CardSide) {
+        if side == .front { front = text } else { back = text }
+    }
+
     /// The image files this card uses.
     var imageFileNames: Set<String> {
         Set([frontImage, backImage].compactMap { $0 }.flatMap(\.fileNames))

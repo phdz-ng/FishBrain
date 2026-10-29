@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Edit a card right on the Now showing preview.** Double-click the card's text to fix the side you see;
+  Return saves (Shift+Return for a new line), Esc cancels, and ⌘Z undoes a save. The preview holds the card
+  while you type, while the widget and the notch keep going. Only Save keeps an edit: going to another deck,
+  starting Learn or a sprint, closing the window or clicking into the card list throws the draft away. A
+  single click still flips the card, a moment later than before. Keyboard and VoiceOver: Return on the
+  focused card or the **Edit card** action; the right-click menu has it too. Text only; pictures are still
+  changed in the card list.
 - **Build your card when importing a CSV.** A CSV, TSV or text import now opens on step 1 of 2, "Build
   your card": click Front or Back, then click the file's columns to put them on that side (or drag them).
   A side can take several columns, joined one per line, so the back can show the meaning and an example
