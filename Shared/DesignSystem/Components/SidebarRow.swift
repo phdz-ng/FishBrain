@@ -21,11 +21,11 @@ struct SidebarRow: View {
             DeckIcon(color: color, size: 22, isOnAccent: isSelected)
             Text(name)
                 .font(Theme.Typography.rowTitle.weight(isSelected ? .medium : .regular))
-                .foregroundStyle(Theme.TextColor.primary)
+                .foregroundStyle(isSelected ? Theme.TextColor.onAccent : Theme.TextColor.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text("\(count)")
                 .font(Theme.Typography.caption)
-                .foregroundStyle(isSelected ? Theme.TextColor.primary : Theme.TextColor.secondary)
+                .foregroundStyle(isSelected ? Theme.TextColor.onAccent : Theme.TextColor.secondary)
         }
         .padding(.horizontal, 10)
         .frame(minHeight: 36)
@@ -50,6 +50,5 @@ struct SidebarRow: View {
         SidebarRow(name: "World Capitals", count: 60, color: .orange)
     }
     .frame(width: 240)
-    .padding(12)
-    .background(Theme.Surface.previewBackdrop)
+    .appearancePreview()
 }

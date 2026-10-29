@@ -65,7 +65,14 @@ final class CardStatusTests: XCTestCase {
     }
 
     func testTheChipsAreLegibleOnTheListSurface() {
-        let surface = Theme.Surface.group.composited(over: Theme.Surface.window.composited(over: Token(0x000000)))
+        for scheme in [ColorScheme.light, .dark] {
+            assertChipsAreLegible(in: scheme)
+        }
+    }
+
+    private func assertChipsAreLegible(in scheme: ColorScheme) {
+        let window = Theme.Surface.window.swatch(for: scheme).composited(over: Swatch(0x000000))
+        let surface = Theme.Surface.group.swatch(for: scheme).composited(over: window)
         var pairs: [(String, Token, Token)] = [
             ("neutral", Theme.TextColor.cardBack, Theme.Surface.control),
             ("learning", Theme.Status.learning, Theme.Status.learning.with(opacity: 0.18)),
@@ -73,8 +80,8 @@ final class CardStatusTests: XCTestCase {
         ]
         for accent in AccentChoice.allCases { pairs.append(("due, \(accent)", accent.light, accent.flippedSurface)) }
         for (name, text, fill) in pairs {
-            let ratio = text.contrast(with: fill.composited(over: surface))
-            XCTAssertGreaterThanOrEqual(ratio, 4.5, "\(name): \(ratio)")
+            let ratio = text.swatch(for: scheme).contrast(with: fill.swatch(for: scheme).composited(over: surface))
+            XCTAssertGreaterThanOrEqual(ratio, 4.5, "\(name) in \(scheme): \(ratio)")
         }
     }
 }

@@ -84,8 +84,6 @@ struct NotchSettingsFooter: View {
     NotchSettingsFooter(decks: PreviewData.decks)
         .environmentObject(PreviewData.settings())
         .frame(width: 216)
-        .padding(24)
-        .background(Theme.Surface.previewBackdrop)
-        .preferredColorScheme(.dark)
+        .appearancePreview()
 }
 #endif
