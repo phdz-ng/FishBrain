@@ -9,6 +9,12 @@
   single click still flips the card, a moment later than before. Keyboard and VoiceOver: Return on the
   focused card or the **Edit card** action; the right-click menu has it too. Text only; pictures are still
   changed in the card list.
+- **Build your card when importing a CSV.** A CSV, TSV or text import now opens on step 1 of 2, "Build
+  your card": click Front or Back, then click the file's columns to put them on that side (or drag them).
+  A side can take several columns, joined one per line, so the back can show the meaning and an example
+  sentence. Columns named Example, Sentence, Note, Hint, Pronunciation or IPA go on the back
+  automatically. "Skip the first row", the deck name and the deck and subject columns are set here too;
+  step 2 is the preview and where the cards go, with a Back button. Anki imports are unchanged.
 
 ## 1.0
 

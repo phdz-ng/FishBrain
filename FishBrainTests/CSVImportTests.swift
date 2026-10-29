@@ -58,33 +58,64 @@ final class CSVTableTests: XCTestCase {
 final class CSVColumnMappingTests: XCTestCase {
     func testMatchesNamesCaseInsensitively() {
         let m = CSVColumnMapping.detect(header: ["Subject", "DECK", "back", "Front"], columnCount: 4)
-        XCTAssertEqual(m, CSVColumnMapping(front: 3, back: 2, deck: 1, subject: 0))
+        XCTAssertEqual(m, CSVColumnMapping(front: [3], back: [2], deck: 1, subject: 0))
         XCTAssertTrue(m.isUsable)
     }
 
     func testAcceptsCommonSynonyms() {
         let m = CSVColumnMapping.detect(header: ["Term", "Definition"], columnCount: 2)
-        XCTAssertEqual(m, CSVColumnMapping(front: 0, back: 1, deck: nil, subject: nil))
-        XCTAssertEqual(CSVColumnMapping.detect(header: ["Question", "Answer"], columnCount: 2).front, 0)
+        XCTAssertEqual(m, CSVColumnMapping(front: [0], back: [1], deck: nil, subject: nil))
+        XCTAssertEqual(CSVColumnMapping.detect(header: ["Question", "Answer"], columnCount: 2).front, [0])
     }
 
     func testWithoutAHeaderTheFirstTwoColumnsAreFrontAndBack() {
         let m = CSVColumnMapping.detect(header: nil, columnCount: 4)
-        XCTAssertEqual(m, CSVColumnMapping(front: 0, back: 1, deck: nil, subject: nil))
+        XCTAssertEqual(m, CSVColumnMapping(front: [0], back: [1], deck: nil, subject: nil))
     }
 
     func testAHeaderWithoutNamesFallsBackToFreeColumns() {
         // Deck is named; front and back are the first two columns that aren't taken.
         let m = CSVColumnMapping.detect(header: ["Deck", "Spanish word", "English word"], columnCount: 3)
-        XCTAssertEqual(m, CSVColumnMapping(front: 1, back: 2, deck: 0, subject: nil))
+        XCTAssertEqual(m, CSVColumnMapping(front: [1], back: [2], deck: 0, subject: nil))
     }
 
     func testOneColumnIsNotUsable() {
         let m = CSVColumnMapping.detect(header: nil, columnCount: 1)
-        XCTAssertEqual(m.front, 0)
-        XCTAssertNil(m.back)
+        XCTAssertEqual(m.front, [0])
+        XCTAssertEqual(m.back, [])
         XCTAssertFalse(m.isUsable)
-        XCTAssertFalse(CSVColumnMapping(front: 0, back: 0).isUsable)
+        XCTAssertFalse(CSVColumnMapping(front: [0], back: [0]).isUsable)
+    }
+
+    // MARK: Several columns on a side (FLAS-97, FLAS-98)
+
+    func testExtraColumnsJoinTheBackAfterItsMainColumn() {
+        let m = CSVColumnMapping.detect(header: ["Word", "Meaning", "Example"], columnCount: 3)
+        XCTAssertEqual(m.front, [0])
+        XCTAssertEqual(m.back, [1, 2])
+    }
+
+    func testExtrasKeepFileOrderAfterTheMainBack() {
+        let m = CSVColumnMapping.detect(header: ["Notes", "Term", "IPA", "Definition", "Sentence"], columnCount: 5)
+        XCTAssertEqual(m.front, [1])
+        XCTAssertEqual(m.back, [3, 0, 2, 4])
+    }
+
+    func testUnknownNamesUseTheFirstTwoColumns() {
+        let m = CSVColumnMapping.detect(header: ["Spanish", "English", "Level"], columnCount: 3)
+        XCTAssertEqual(m, CSVColumnMapping(front: [0], back: [1]))
+    }
+
+    func testIsUsableRejectsAColumnOnBothSides() {
+        XCTAssertFalse(CSVColumnMapping(front: [0], back: [1, 0]).isUsable)
+        XCTAssertFalse(CSVColumnMapping(front: [], back: [1]).isUsable)
+        XCTAssertFalse(CSVColumnMapping(front: [0], back: []).isUsable)
+        XCTAssertTrue(CSVColumnMapping(front: [0, 2], back: [1]).isUsable)
+    }
+
+    func testAHeaderOfWordMeaningExampleLooksLikeOne() throws {
+        let t = try CSVTable.read(Data("Word,Meaning,Example\nhablar,to speak,Hablo español.".utf8)).get()
+        XCTAssertTrue(t.looksLikeHeader)
     }
 }
 
@@ -228,6 +259,54 @@ final class CSVImportPlanTests: XCTestCase {
         let p = try plan("Front,Back,Deck\nonly front")
         XCTAssertEqual(p.skipped, [.init(rowNumber: 2, reason: .emptyBack)])
         XCTAssertTrue(p.isEmpty)
+    }
+
+    // MARK: Several columns on a side (FLAS-97)
+
+    private func plan(_ text: String, hasHeader: Bool = true, mapping: CSVColumnMapping,
+                      destination: CSVImportDestination = .newDeck("Deck"), skipDuplicates: Bool = false,
+                      library: Library = Library()) throws -> CSVImportPlan {
+        let options = CSVImportOptions(hasHeader: hasHeader, mapping: mapping, destination: destination, skipDuplicates: skipDuplicates)
+        return CSVImport.plan(table: try table(text), options: options, library: library, fileName: "file")
+    }
+
+    func testTwoBackColumnsJoinWithALineBreakInOrder() throws {
+        let p = try plan("Word,Meaning,Example\nhablar,to speak,Hablo español.", mapping: .init(front: [0], back: [1, 2]))
+        XCTAssertEqual(p.newDecks[0].cards.map(\.back), ["to speak\nHablo español."])
+        let reversed = try plan("Word,Meaning,Example\nhablar,to speak,Hablo español.", mapping: .init(front: [0], back: [2, 1]))
+        XCTAssertEqual(reversed.newDecks[0].cards.map(\.back), ["Hablo español.\nto speak"])
+    }
+
+    func testEmptyCellsLeaveNoBlankLines() throws {
+        let p = try plan("A,B,C,D\nfront,,middle,\nx,y,,", mapping: .init(front: [0], back: [1, 2, 3]))
+        XCTAssertEqual(p.newDecks[0].cards.map(\.back), ["middle", "y"], "a row with one empty and one filled back column is kept")
+        XCTAssertTrue(p.skipped.isEmpty)
+    }
+
+    func testARowWithEveryBackColumnEmptyIsSkipped() throws {
+        let p = try plan("A,B,C\nfront,,\n,,x", mapping: .init(front: [0], back: [1, 2]))
+        XCTAssertEqual(p.skipped, [.init(rowNumber: 2, reason: .emptyBack), .init(rowNumber: 3, reason: .emptyFront)])
+        XCTAssertTrue(p.isEmpty)
+    }
+
+    func testSeveralFrontColumnsJoinToo() throws {
+        let p = try plan("A,B,C\nla,mesa,the table", mapping: .init(front: [0, 1], back: [2]))
+        XCTAssertEqual(p.newDecks[0].cards.map(\.front), ["la\nmesa"])
+    }
+
+    func testDuplicatesCompareTheJoinedText() throws {
+        let deck = Deck(name: "Travel", cards: [Card(front: "hablar", back: "to speak\nHablo.")])
+        let text = "Word,Meaning,Example\nhablar,to speak,Hablo.\nhablar,to speak,Hablas."
+        let p = try plan(text, mapping: .init(front: [0], back: [1, 2]), destination: .existingDeck(deck.id),
+                         skipDuplicates: true, library: Library(decks: [deck]))
+        XCTAssertEqual(p.duplicateCount, 1)
+        XCTAssertEqual(p.additions.first?.cards.map(\.back), ["to speak\nHablas."])
+    }
+
+    func testThePreviewShowsJoinedTextOnOneLine() throws {
+        let p = try plan("Word,Meaning,Example\nhablar,to speak,Hablo.", mapping: .init(front: [0], back: [1, 2]))
+        XCTAssertEqual(p.preview[0].back, "to speak\nHablo.")
+        XCTAssertEqual(ImportSheet.oneLine(p.preview[0].back), "to speak / Hablo.")
     }
 
     func testAnUnusableMappingMakesNothing() throws {
