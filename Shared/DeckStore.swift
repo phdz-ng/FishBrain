@@ -410,6 +410,15 @@ final class DeckStore: ObservableObject {
         decks[deckIndex].cards[cardIndex] = card
     }
 
+    /// Sets the text on one side of a card as one undo step ("Edit Card"), as saving in the Now showing
+    /// preview does. Nothing else about the card changes: its pictures, place in the deck and review
+    /// state stay as they were.
+    func setText(_ text: String, on side: CardSide, for cardID: Card.ID, in deckID: Deck.ID) {
+        guard let old = card(cardID, in: deckID)?.text(on: side), old != text else { return }
+        updateCard(cardID, in: deckID) { $0.setText(text, on: side) }
+        registerUndo("Edit Card") { $0.setText(old, on: side, for: cardID, in: deckID) }
+    }
+
     // MARK: Pictures
 
     /// Puts a picture on one side of a card, replacing any there. The old files go at the next save.
