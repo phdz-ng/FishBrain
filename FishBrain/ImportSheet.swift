@@ -15,8 +15,8 @@ struct ImportRequest: Identifiable, Equatable {
     var choosesFileAtOnce = false
 }
 
-/// "Import": choose or drop a CSV, say which column is what, see what will happen, then do it. The whole
-/// import is one undo step.
+/// "Import": choose or drop a CSV, build the card from its columns (step 1), see what will happen and where
+/// it goes (step 2), then do it. The whole import is one undo step.
 struct ImportSheet: View {
     var request: ImportRequest
     /// Takes the user to what was made (a deck or a subject).
@@ -32,6 +32,9 @@ struct ImportSheet: View {
 
     private enum Stage {
         case choosing(error: String?)
+        /// Step 1 of a CSV import: which columns go on the card.
+        case buildCard
+        /// Step 2 of a CSV import, or an Anki package's only step.
         case preview
         case done(CSVImportPlan)
     }
@@ -41,11 +44,12 @@ struct ImportSheet: View {
     @State private var stage: Stage = .choosing(error: nil)
     @State private var table: CSVTable?
     @State private var fileName = ""
-    @State private var hasHeader = false
-    @State private var mapping = CSVColumnMapping()
+    /// Step 1's card, the first-row choice and the deck name, kept when going back from step 2.
+    @State private var builder: CSVCardBuilder?
+    /// Next was pressed with something missing: say what.
+    @State private var showsBuildProblem = false
     @State private var kind: Kind = .newDeck
     @State private var chosenDeckID: Deck.ID?
-    @State private var newDeckName = ""
     @State private var skipDuplicates = false
     @State private var isDropTargeted = false
     @State private var showsSkipped = false
@@ -60,6 +64,7 @@ struct ImportSheet: View {
         Group {
             switch stage {
             case .choosing(let error): choosing(error: error)
+            case .buildCard: buildCard
             case .preview: if package != nil { packagePreview } else { preview }
             case .done(let plan): done(plan)
             }
@@ -152,7 +157,83 @@ struct ImportSheet: View {
         }
     }
 
-    // MARK: Preview
+    // MARK: Step 1: build the card
+
+    private var hasHeader: Bool { builder?.hasHeader ?? false }
+    private var mapping: CSVColumnMapping { builder?.mapping ?? CSVColumnMapping() }
+
+    /// Step 1's deck name and step 2's "Add to a new deck": one name, so they never disagree.
+    private var newDeckName: Binding<String> {
+        Binding(get: { builder?.deckName ?? "" }, set: { builder?.deckName = $0 })
+    }
+
+    private var builderBinding: Binding<CSVCardBuilder> {
+        Binding(
+            get: { builder ?? CSVCardBuilder(table: CSVTable(delimiter: .comma, encoding: .utf8, rows: [], brokenRecords: []), fileName: "") },
+            set: { new in
+                let columnsChanged = new.deckColumn != builder?.deckColumn || new.subjectColumn != builder?.subjectColumn
+                builder = new
+                if columnsChanged { fitKindToColumns() }
+            }
+        )
+    }
+
+    /// The cards go to a deck that exists, so step 1 shows it instead of asking for a name.
+    private var existingDeckName: String? {
+        guard effectiveKind == .oneDeck, let deck = store.decks.first(where: { $0.id == chosenDeckID }) else { return nil }
+        return deck.name
+    }
+
+    private var buildProblem: String? { builder?.problem(needsDeckName: existingDeckName == nil) }
+
+    private var buildCard: some View {
+        let plan = plan
+        let problem = showsBuildProblem ? buildProblem : nil
+        let step = CSVBuildCardStep(
+            builder: builderBinding, cardCount: plan.cardCount, existingDeckName: existingDeckName,
+            onChangeDestination: { stage = .preview }, problem: problem
+        )
+        return VStack(alignment: .leading, spacing: 18) {
+            fileHeader(step: 1)
+            ViewThatFits(in: .vertical) {
+                step
+                ScrollView { step }.frame(height: 480)
+            }
+            HStack(spacing: 10) {
+                Spacer()
+                Button("Cancel", action: onClose)
+                    .buttonStyle(.capsuleSecondary)
+                    .keyboardShortcut(.cancelAction)
+                Button("Next", action: next)
+                    .buttonStyle(.capsulePrimary)
+                    .keyboardShortcut(.defaultAction)
+                    .opacity(buildProblem == nil ? 1 : 0.5)
+            }
+        }
+    }
+
+    /// Step 2, unless something is missing from step 1.
+    private func next() {
+        guard buildProblem == nil else {
+            showsBuildProblem = true
+            NSAccessibility.post(
+                element: NSApp as Any, notification: .announcementRequested,
+                userInfo: [.announcement: buildProblem ?? "", .priority: NSAccessibilityPriorityLevel.high.rawValue]
+            )
+            return
+        }
+        showsBuildProblem = false
+        stage = .preview
+    }
+
+    /// A deck or subject column means making decks from the file; none means one new deck. A deck chosen to
+    /// add to stays chosen.
+    private func fitKindToColumns() {
+        guard kind != .oneDeck else { return }
+        kind = (mapping.deck != nil || mapping.subject != nil) ? .fromFile : .newDeck
+    }
+
+    // MARK: Step 2: preview and destination
 
     private var options: CSVImportOptions {
         CSVImportOptions(hasHeader: hasHeader, mapping: mapping, destination: destination, skipDuplicates: skipDuplicates && kind == .oneDeck)
@@ -161,8 +242,8 @@ struct ImportSheet: View {
     private var destination: CSVImportDestination {
         switch effectiveKind {
         case .fromFile: .fromFile
-        case .oneDeck: chosenDeckID.map { .existingDeck($0) } ?? .newDeck(newDeckName)
-        case .newDeck: .newDeck(newDeckName)
+        case .oneDeck: chosenDeckID.map { .existingDeck($0) } ?? .newDeck(newDeckName.wrappedValue)
+        case .newDeck: .newDeck(newDeckName.wrappedValue)
         }
     }
 
@@ -177,21 +258,19 @@ struct ImportSheet: View {
         return CSVImport.plan(
             table: table, options: options,
             library: Library(subjects: store.subjects, decks: store.decks),
-            contextSubjectID: request.subjectID, fileName: newDeckName.isEmpty ? fileName : newDeckName
+            contextSubjectID: request.subjectID, fileName: newDeckName.wrappedValue.isEmpty ? fileName : newDeckName.wrappedValue
         )
     }
 
     private var preview: some View {
         let plan = plan
-        let titles = table?.columnTitles(hasHeader: hasHeader) ?? []
         let reason = importDisabledReason(plan)
         let sections = VStack(alignment: .leading, spacing: 18) {
-            columnsSection(titles: titles)
             previewSection(plan)
             destinationSection(plan)
         }
         return VStack(alignment: .leading, spacing: 18) {
-            fileHeader
+            fileHeader(step: 2)
             // In a short window the sections scroll and the header and the buttons stay put.
             ViewThatFits(in: .vertical) {
                 sections
@@ -201,7 +280,7 @@ struct ImportSheet: View {
         }
     }
 
-    private var fileHeader: some View {
+    private func fileHeader(step: Int) -> some View {
         HStack(spacing: 14) {
             Text(".csv")
                 .font(Theme.Typography.micro.weight(.bold))
@@ -220,6 +299,9 @@ struct ImportSheet: View {
                     .foregroundStyle(Theme.TextColor.secondary)
             }
             Spacer(minLength: 8)
+            Text("Step \(step) of 2")
+                .font(Theme.Typography.footnote.weight(.semibold))
+                .foregroundStyle(Theme.TextColor.secondary)
             Button("Choose another…", action: chooseFile)
                 .buttonStyle(.capsuleSecondary)
         }
@@ -236,60 +318,6 @@ struct ImportSheet: View {
         case .windowsLatin1: encoding = "Windows Latin-1"
         }
         return "\(rows) \(rows == 1 ? "row" : "rows") · \(table.columnCount) \(table.columnCount == 1 ? "column" : "columns") · \(encoding) · \(separator) separated"
-    }
-
-    private func columnsSection(titles: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            sectionLabel("Columns")
-            VStack(spacing: 0) {
-                columnRow("Front of card", selection: $mapping.front, titles: titles, allowsNone: false)
-                HairlineDivider()
-                columnRow("Back of card", selection: $mapping.back, titles: titles, allowsNone: false)
-                HairlineDivider()
-                columnRow("Deck", selection: $mapping.deck, titles: titles, allowsNone: true)
-                HairlineDivider()
-                columnRow("Subject", selection: $mapping.subject, titles: titles, allowsNone: true)
-                HairlineDivider()
-                HStack {
-                    Text("First row is a header")
-                        .font(Theme.Typography.rowTitle)
-                        .foregroundStyle(Theme.TextColor.primary)
-                    Spacer()
-                    Toggle("First row is a header", isOn: Binding(
-                        get: { hasHeader },
-                        set: { setHeader($0) }
-                    ))
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .tint(Theme.Surface.switchOn.color)
-                }
-                .padding(.vertical, 9)
-            }
-            .padding(.horizontal, 14)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Theme.Surface.group))
-            .overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Theme.Surface.hairline, lineWidth: 0.5) }
-            Text("Matched by name. Columns you don’t use are ignored.")
-                .font(Theme.Typography.footnote)
-                .foregroundStyle(Theme.TextColor.secondary)
-        }
-    }
-
-    private func columnRow(_ title: String, selection: Binding<Int?>, titles: [String], allowsNone: Bool) -> some View {
-        HStack {
-            Text(title)
-                .font(Theme.Typography.rowTitle)
-                .foregroundStyle(Theme.TextColor.primary)
-            Spacer()
-            Picker(title, selection: selection) {
-                if allowsNone || selection.wrappedValue == nil { Text(allowsNone ? "None" : "Choose…").tag(Int?.none) }
-                ForEach(Array(titles.enumerated()), id: \.offset) { index, name in
-                    Text(name).tag(Int?.some(index))
-                }
-            }
-            .labelsHidden()
-            .frame(width: 200)
-        }
-        .padding(.vertical, 6)
     }
 
     private func previewSection(_ plan: CSVImportPlan) -> some View {
@@ -335,10 +363,10 @@ struct ImportSheet: View {
                     .foregroundStyle(Theme.Status.problem)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                Text(row.front)
+                Text(Self.oneLine(row.front))
                     .foregroundStyle(Theme.TextColor.primary)
                     .frame(width: 130, alignment: .leading)
-                Text(row.back)
+                Text(Self.oneLine(row.back))
                     .foregroundStyle(Theme.TextColor.cardBack)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -350,6 +378,9 @@ struct ImportSheet: View {
         .padding(.vertical, 7)
         .background(row.problem == nil ? Theme.TextColor.primary.with(opacity: 0) : Theme.Status.problem.with(opacity: 0.1))
     }
+
+    /// A side of several lines on one preview row: "to speak / Hablo español."
+    static func oneLine(_ text: String) -> String { text.replacingOccurrences(of: "\n", with: " / ") }
 
     private func destinationSection(_ plan: CSVImportPlan) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -372,7 +403,7 @@ struct ImportSheet: View {
                 }
                 HairlineDivider()
                 destinationRow(.newDeck, title: "Add to a new deck", detail: request.subjectID == nil ? "Named below." : "Made inside this subject.") {
-                    TextField("Deck name", text: $newDeckName)
+                    TextField("Deck name", text: newDeckName)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 220)
                         .onTapGesture { kind = .newDeck }
@@ -437,7 +468,7 @@ struct ImportSheet: View {
     }
 
     private func importDisabledReason(_ plan: CSVImportPlan) -> String? {
-        if !mapping.isUsable { return "Choose a different column for the front and for the back." }
+        if !mapping.isUsable { return "Go back and choose a column for the front and for the back." }
         if effectiveKind == .oneDeck, chosenDeckID == nil { return "Choose a deck." }
         if plan.isEmpty { return "No cards were found with these columns." }
         return nil
@@ -451,6 +482,8 @@ struct ImportSheet: View {
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 8)
+            Button("Back") { stage = .buildCard }
+                .buttonStyle(.capsuleSecondary)
             Button("Cancel", action: onClose)
                 .buttonStyle(.capsuleSecondary)
                 .keyboardShortcut(.cancelAction)
@@ -612,8 +645,11 @@ struct ImportSheet: View {
         return true
     }
 
+    /// A CSV, TSV or text file opens on step 1, "Build your card"; an Anki package on its own preview.
+    static func opensOnBuildStep(_ url: URL) -> Bool { url.pathExtension.lowercased() != "apkg" }
+
     private func load(_ url: URL) {
-        if url.pathExtension.lowercased() == "apkg" {
+        if !Self.opensOnBuildStep(url) {
             loadPackage(url)
             return
         }
@@ -624,27 +660,18 @@ struct ImportSheet: View {
             stage = .choosing(error: ImportMessage.failure(failure).message)
         case .success(let loaded):
             table = loaded
-            fileName = url.deletingPathExtension().lastPathComponent
-            newDeckName = fileName
-            hasHeader = loaded.looksLikeHeader
-            mapping = CSVColumnMapping.detect(
-                header: hasHeader ? loaded.rows.first?.fields : nil, columnCount: loaded.columnCount
-            )
+            fileName = CSVCardBuilder.deckName(forFile: url)
+            builder = CSVCardBuilder(table: loaded, fileName: fileName)
+            showsBuildProblem = false
             if request.deckID != nil, store.decks.contains(where: { $0.id == request.deckID }) {
                 kind = .oneDeck
                 chosenDeckID = request.deckID
             } else {
-                kind = (mapping.deck != nil || mapping.subject != nil) ? .fromFile : .newDeck
+                kind = .newDeck
+                fitKindToColumns()
             }
-            stage = .preview
+            stage = .buildCard
         }
-    }
-
-    private func setHeader(_ on: Bool) {
-        guard let table else { return }
-        hasHeader = on
-        mapping = CSVColumnMapping.detect(header: on ? table.rows.first?.fields : nil, columnCount: table.columnCount)
-        if kind == .fromFile, mapping.deck == nil, mapping.subject == nil { kind = .newDeck }
     }
 
     private func perform(_ plan: CSVImportPlan) {
