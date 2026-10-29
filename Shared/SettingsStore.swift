@@ -39,6 +39,10 @@ final class SettingsStore: ObservableObject {
     @Published var pillStyle: PillStyle {
         didSet { if pillStyle != oldValue { save(reloadsWidgets: false) } }
     }
+    /// "Flip every" for the Card notch.
+    @Published var notchFlipInterval: NotchFlipInterval {
+        didSet { if notchFlipInterval != oldValue { save(reloadsWidgets: false) } }
+    }
     /// Cards to study each day for the streak.
     @Published var dailyGoal: Int {
         didSet {
@@ -78,7 +82,8 @@ final class SettingsStore: ObservableObject {
     ) {
         self.storage = storage
         self.onSaved = onSaved
-        let loaded = storage.load()
+        var loaded = storage.load()
+        let migratedPillStyle = loaded.migratePillStyleToCard()
         self.accent = loaded.accent
         self.showsNotch = loaded.showsNotch
         self.notchDeckID = loaded.notchDeckID
@@ -88,11 +93,13 @@ final class SettingsStore: ObservableObject {
         self.hidesInFullScreen = loaded.hidesInFullScreen
         self.onlyOnActiveDisplay = loaded.onlyOnActiveDisplay
         self.pillStyle = loaded.pillStyle
+        self.notchFlipInterval = loaded.notchFlipInterval
         self.dailyGoal = loaded.dailyGoal
         self.keyboardGrading = loaded.keyboardGrading
         self.offersCardFromCopy = loaded.offersCardFromCopy
         self.ai = loaded.ai
         self.reviewMinutes = loaded.reviewMinutes
+        if migratedPillStyle { save(reloadsWidgets: false) }
     }
 
     /// What decides which displays get a notch.
@@ -110,6 +117,8 @@ final class SettingsStore: ObservableObject {
                 gettingStartedHandled: gettingStartedHandled, hasSeenWelcome: hasSeenWelcome,
                 showsOnExternalDisplays: showsOnExternalDisplays, hidesInFullScreen: hidesInFullScreen,
                 onlyOnActiveDisplay: onlyOnActiveDisplay, pillStyle: pillStyle,
+                // The Card migration always ran in init, so a save records it as done.
+                notchFlipInterval: notchFlipInterval, didMigratePillStyleCard1: true,
                 dailyGoal: dailyGoal, keyboardGrading: keyboardGrading,
                 offersCardFromCopy: offersCardFromCopy, ai: ai, reviewMinutes: reviewMinutes
             ))
