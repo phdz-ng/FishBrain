@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **A new app icon: the Counterchange fish.** The icon is now an orange tile split down the middle, with a
+  two-tone fish swimming up across the split, its halves colored the opposite way to the tile behind them.
+  It is always Orange, whatever accent you pick, and at the smallest sizes the eye and rounded corners are
+  dropped so it stays clear.
 - **Card text in the resting notch.** A new pill style, **Card**, shows the card you're learning in the notch
   without hovering, and flips between front and answer every 5 seconds (front in white, answer in orange).
   Where FishBrain draws the notch it is now the size of a real MacBook notch, 200 × 32 pt. On a Mac with a

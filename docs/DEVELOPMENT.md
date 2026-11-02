@@ -60,7 +60,7 @@ fills with `NotificationCenter-*.ips`, check `log show` for that message first.
 
 ## App icon and first launch
 
-The icon (Frosted Midnight: a stack of cards with a fish) is generated, not drawn by hand:
+The icon (Counterchange: a split orange tile with the two-tone fish) is generated, not drawn by hand:
 
 ```sh
 swift Scripts/make-icon.swift FishBrain/Assets.xcassets/AppIcon.appiconset
