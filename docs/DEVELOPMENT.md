@@ -67,6 +67,19 @@ swift Scripts/make-icon.swift FishBrain/Assets.xcassets/AppIcon.appiconset
 ```
 
 It writes every macOS size (16 to 512 pt at 1x and 2x) and `Contents.json`; `AppIconTests` checks the sizes.
+It also writes the layers and `icon.json` of `FishBrain/AppIcon.icon`, the Icon Composer icon macOS 26 uses for the
+Default, Dark, Clear and Tinted icon styles. Dark swaps in a dark left half of the tile; Clear and Tinted (which
+share one setting in `icon.json`) drop the tile and the eye, so the system draws the fish as glass or tint, with the
+left half faded to 55%. The `.icon` and the asset catalog both use the name `AppIcon`: Xcode 26 and later builds
+the styles into `Assets.car` and keeps the asset catalog's images, plus the `AppIcon.icns` that macOS 14 to 25 show.
+To check a style without installing the app, render it with Icon Composer's tool:
+
+```sh
+"/Applications/Xcode.app/Contents/Applications/Icon Composer.app/Contents/Executables/ictool" FishBrain/AppIcon.icon \
+  --export-image --output-file dark.png --platform macOS --rendition Dark --width 512 --height 512 --scale 1
+```
+
+(`--rendition` takes Default, Dark, ClearLight, ClearDark, TintedLight or TintedDark.)
 
 On first launch, an empty library gets a "Getting Started" deck (`Shared/GettingStarted.swift`) and a welcome sheet explains how to add the widget (right-click the desktop, Edit Widgets). Both happen once: the flags `gettingStartedHandled` and `hasSeenWelcome` live in `settings.json`, so a deleted deck never comes back by itself. Help has "Welcome to FishBrain" and "Add Getting Started Deck" to see either again.
 

@@ -192,6 +192,35 @@ final class AppIconTests: XCTestCase {
         XCTAssertEqual(try rgb(513, 600), pale)
     }
 
+    func testTheIconComposerIconHasEveryLayerAndTheStyles() throws {
+        let icon = projectRoot.appendingPathComponent("FishBrain/AppIcon.icon")
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: icon.appendingPathComponent("icon.json"))) as? [String: Any])
+        let groups = try XCTUnwrap(json["groups"] as? [[String: Any]])
+        let layers = try XCTUnwrap(groups.first?["layers"] as? [[String: Any]])
+        let names = layers.compactMap { $0["name"] as? String }
+        XCTAssertEqual(Set(names), ["tile-left", "tile-left-dark", "tile-right", "fish-left", "fish-right", "eye"])
+        for layer in layers {
+            let image = try XCTUnwrap(layer["image-name"] as? String)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: icon.appendingPathComponent("Assets/\(image)").path), image)
+        }
+        func layer(_ name: String) throws -> [String: Any] { try XCTUnwrap(layers.first { $0["name"] as? String == name }) }
+        func appearances(_ layer: [String: Any], _ key: String) -> Set<String> {
+            Set((layer[key] as? [[String: Any]] ?? []).compactMap { $0["appearance"] as? String })
+        }
+        // Dark swaps the pale left half of the tile for the dark one; Tinted (and Clear) drop the tile and the eye.
+        XCTAssertEqual(appearances(try layer("tile-left"), "hidden-specializations"), ["dark", "tinted"])
+        XCTAssertEqual(appearances(try layer("tile-left-dark"), "hidden-specializations"), ["dark"])
+        XCTAssertEqual(appearances(try layer("tile-right"), "hidden-specializations"), ["tinted"])
+        XCTAssertEqual(appearances(try layer("eye"), "hidden-specializations"), ["tinted"])
+        // The two fish halves differ in strength there, not only in color.
+        let tinted = try XCTUnwrap((try layer("fish-left")["opacity-specializations"] as? [[String: Any]])?.first { $0["appearance"] as? String == "tinted" })
+        XCTAssertEqual(try XCTUnwrap(tinted["value"] as? Double), 0.55, accuracy: 0.001)
+
+        let dark = try XCTUnwrap(NSBitmapImageRep(data: Data(contentsOf: icon.appendingPathComponent("Assets/tile-left-dark.png"))))
+        let pixel = try XCTUnwrap(dark.colorAt(x: 100, y: 100))
+        XCTAssertEqual([pixel.redComponent, pixel.greenComponent, pixel.blueComponent].map { Int(($0 * 255).rounded()) }, [0x3D, 0x24, 0x18])
+    }
+
     func testTheAppTargetUsesTheIcon() throws {
         let yml = try String(contentsOf: projectRoot.appendingPathComponent("project.yml"), encoding: .utf8)
         XCTAssertTrue(yml.contains("ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon"))
