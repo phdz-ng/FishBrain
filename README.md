@@ -1,4 +1,9 @@
-# FishBrain
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/fishbrain-lockup-dark.svg">
+    <img src="docs/brand/fishbrain-lockup.svg" alt="FishBrain" height="90">
+  </picture>
+</h1>
 
 [![Download FishBrain for macOS](https://img.shields.io/badge/Download-FishBrain_for_macOS-2ea44f?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/phdz-ng/FishBrain/releases/latest/download/FishBrain-unsigned.dmg)
 

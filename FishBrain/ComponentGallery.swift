@@ -58,6 +58,14 @@ struct ComponentGallery: View {
                 ForEach(DeckColor.allCases, id: \.self) { DeckIcon(color: $0, size: 28) }
             }
 
+            HStack(alignment: .bottom, spacing: 20) {
+                FishMark().frame(height: 96)
+                FishMark().frame(height: 48)
+                FishMark().frame(height: 24)
+                FishMark().frame(height: 16)
+                FishMark(style: .solid(Theme.TextColor.primary), showsEye: false).frame(height: 48)
+            }
+
             VStack(alignment: .leading, spacing: 10) {
                 CountdownProgressBar(progress: 0.62).frame(width: 320)
                 CountdownProgressBar(progress: 0.3, height: 3).frame(width: 320)
