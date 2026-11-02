@@ -172,6 +172,26 @@ final class AppIconTests: XCTestCase {
         }
     }
 
+    func testTheTileAndTheFishSitOnTheSplitWithSwappedColors() throws {
+        let rep = try XCTUnwrap(NSBitmapImageRep(data: Data(contentsOf: iconSet.appendingPathComponent("icon_512x512@2x.png"))))
+        XCTAssertEqual(rep.pixelsWide, 1024)
+        func rgb(_ x: Int, _ y: Int) throws -> [Int] {
+            // colorAt hands back the stored values as they are, so there is no color conversion to account for.
+            let c = try XCTUnwrap(rep.colorAt(x: x, y: y))
+            return [c.redComponent, c.greenComponent, c.blueComponent].map { Int(($0 * 255).rounded()) }
+        }
+        let pale = [0xFF, 0xA3, 0x6B], deep = [0xC2, 0x41, 0x0C]
+        // Above the fish the tile is pale to the left of the center line and deep from it.
+        XCTAssertEqual(try rgb(511, 150), pale)
+        XCTAssertEqual(try rgb(512, 150), deep)
+        // Level with the middle of the fish, away from it: the same split.
+        XCTAssertEqual(try rgb(312, 512), pale)
+        XCTAssertEqual(try rgb(712, 512), deep)
+        // On the fish the halves are swapped: deep on the pale side, pale on the deep side.
+        XCTAssertEqual(try rgb(511, 600), deep)
+        XCTAssertEqual(try rgb(513, 600), pale)
+    }
+
     func testTheAppTargetUsesTheIcon() throws {
         let yml = try String(contentsOf: projectRoot.appendingPathComponent("project.yml"), encoding: .utf8)
         XCTAssertTrue(yml.contains("ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon"))
