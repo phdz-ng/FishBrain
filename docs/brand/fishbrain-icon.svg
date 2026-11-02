@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="824" height="824" viewBox="0 0 824 824" role="img" aria-label="FishBrain">
+<title>FishBrain</title>
+<defs>
+<clipPath id="tile"><rect width="824" height="824" rx="186"/></clipPath>
+<clipPath id="right"><rect x="100" y="0" width="100" height="320"/></clipPath>
+</defs>
+<g clip-path="url(#tile)">
+<rect width="824" height="824" fill="#FFA36B"/>
+<rect x="412" width="412" height="824" fill="#C2410C"/>
+</g>
+<rect x="1.5" y="1.5" width="821" height="821" rx="184.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="3"/>
+<g transform="translate(412 412) scale(1.75) translate(-100 -160)">
+<path d="M92.11 30.11A10 10 0 0 1 107.89 30.11L173.2 113.85A10 10 0 0 1 173.2 126.15L107.89 209.89A10 10 0 0 1 92.11 209.89L26.8 126.15A10 10 0 0 1 26.8 113.85ZM95.5 239.1A6 6 0 0 1 104.5 239.1L126.5 264.03A6 6 0 0 1 126.5 271.97L104.5 296.9A6 6 0 0 1 95.5 296.9L73.5 271.97A6 6 0 0 1 73.5 264.03Z" fill="#C2410C"/>
+<path d="M92.11 30.11A10 10 0 0 1 107.89 30.11L173.2 113.85A10 10 0 0 1 173.2 126.15L107.89 209.89A10 10 0 0 1 92.11 209.89L26.8 126.15A10 10 0 0 1 26.8 113.85ZM95.5 239.1A6 6 0 0 1 104.5 239.1L126.5 264.03A6 6 0 0 1 126.5 271.97L104.5 296.9A6 6 0 0 1 95.5 296.9L73.5 271.97A6 6 0 0 1 73.5 264.03Z" fill="#FFA36B" clip-path="url(#right)"/>
+<circle cx="100" cy="78" r="14" fill="#FFFFFF"/>
+</g>
+</svg>

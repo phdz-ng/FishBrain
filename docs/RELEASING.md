@@ -48,6 +48,12 @@ The Mac App Store is not planned for 1.0 (see "Later: App Store" at the end).
      --notes-file <(Scripts/release-notes.sh 1.0 "$(shasum -a 256 "$DMG" | cut -d' ' -f1)")
    ```
 
+## The GitHub social preview
+
+The image shown when the repository is linked (a chat, a social post) is `docs/brand/social-preview.png`,
+1280 × 640 with the logo on `#FFF4EC`. GitHub only takes it by hand: **Settings > General > Social preview >
+Edit > Upload an image**, once, and again if the logo changes (`Scripts/make-brand.swift` rewrites the file).
+
 ## Optional: a signed and notarized release (needs a paid Apple Developer Program account)
 
 ### One-time setup
