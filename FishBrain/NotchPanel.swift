@@ -44,6 +44,8 @@ final class NotchPanel: NSPanel {
         hidesOnDeactivate = false
         animationBehavior = .none
         titleVisibility = .hidden
+        // Dark in every app appearance: the notch is black like the hardware, with light text.
+        appearance = NSAppearance(named: .darkAqua)
     }
 
     /// Whether the panel may take the keyboard. Only while grade buttons are on screen, so the keys
@@ -285,6 +287,8 @@ struct NotchRootView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .environment(\.accentChoice, model.accent)
+        // Always dark, whatever the app's appearance: the notch is black like the hardware.
+        .environment(\.colorScheme, .dark)
         .preferredColorScheme(.dark)
     }
 

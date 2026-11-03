@@ -18,7 +18,7 @@ struct StackGlyph: Shape {
     }
 }
 
-/// Rounded square in the deck's color with the stack glyph. `isOnAccent` swaps the fill for a
+/// Rounded square in the deck's color with a white stack glyph. `isOnAccent` swaps the fill for a
 /// translucent white so the icon stays visible on an accent-filled row.
 struct DeckIcon: View {
     var color: DeckColor
@@ -34,7 +34,7 @@ struct DeckIcon: View {
             .frame(width: size, height: size)
             .overlay {
                 StackGlyph()
-                    .stroke(Theme.TextColor.primary, style: StrokeStyle(lineWidth: glyph * 2.4 / 24, lineCap: .round))
+                    .stroke(Theme.TextColor.onAccent, style: StrokeStyle(lineWidth: glyph * 2.4 / 24, lineCap: .round))
                     .frame(width: glyph, height: glyph)
             }
             .accessibilityHidden(true)
@@ -46,6 +46,5 @@ struct DeckIcon: View {
         ForEach(DeckColor.allCases, id: \.self) { DeckIcon(color: $0, size: 32) }
         DeckIcon(color: .accent, size: 32, isOnAccent: true)
     }
-    .padding(24)
-    .background(Theme.Surface.previewBackdrop)
+    .appearancePreview()
 }

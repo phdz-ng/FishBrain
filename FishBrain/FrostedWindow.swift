@@ -1,17 +1,25 @@
 import AppKit
 import SwiftUI
 
-/// Behind-window blur: the desktop shows through, tinted by `Theme.Surface.window` on top.
+/// Behind-window blur: the desktop shows through, tinted by `Theme.Surface.window` on top. The HUD
+/// material is dark; light uses the plain window material under its near-white tint. With Reduce
+/// Transparency macOS draws either one solid.
 struct FrostedWindowBackground: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
-        view.material = .hudWindow
         view.blendingMode = .behindWindow
         view.state = .active
+        view.material = Self.material(for: context.environment.colorScheme)
         return view
     }
 
-    func updateNSView(_ view: NSVisualEffectView, context: Context) {}
+    func updateNSView(_ view: NSVisualEffectView, context: Context) {
+        view.material = Self.material(for: context.environment.colorScheme)
+    }
+
+    static func material(for scheme: ColorScheme) -> NSVisualEffectView.Material {
+        scheme == .dark ? .hudWindow : .underWindowBackground
+    }
 }
 
 /// Makes the hosting window transparent so the blur above can show, and lets the content run

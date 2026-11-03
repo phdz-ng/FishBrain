@@ -93,7 +93,7 @@ struct FishMark: View {
                     FishMarkShape(roundsCorners: rounds).fill(token)
                 }
                 if Self.drawsEye(showsEye: showsEye, height: proxy.size.height) {
-                    FishMarkEye().fill(Theme.TextColor.primary)
+                    FishMarkEye().fill(Theme.TextColor.onAccent)
                 }
             }
         }

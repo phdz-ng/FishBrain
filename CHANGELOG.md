@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Light theme, and a new Orange accent.** FishBrain now opens in light: a white window and cards, a
+  sidebar tinted by your accent, and Orange as the new default accent. After the update everyone starts in
+  light; if you had the old default Indigo you now have Orange, and Blue, Purple or Teal are kept. To go
+  back to dark, click the sun button in the toolbar (between Review and the menus) and choose **Dark**, or
+  use **View ▸ Appearance** or **Settings > General > Appearance**. **Match system** follows your Mac. To
+  pick another color, choose it under **Settings > General > Accent color**; every accent works in light
+  and dark. The widget follows the same choice; the notch stays black.
+- The streak flame is now gold and the orange deck color a deeper amber, so neither looks like the Orange
+  accent.
 - **A new app icon: the Counterchange fish.** The icon is now an orange tile split down the middle, with a
   two-tone fish swimming up across the split, its halves colored the opposite way to the tile behind them.
   It is always Orange, whatever accent you pick, and at the smallest sizes the eye and rounded corners are

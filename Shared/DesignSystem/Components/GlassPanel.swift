@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Grouped-list container: translucent smoked glass with a hairline border.
+/// Grouped-list container: translucent glass (smoked in dark, near-white in light) with a hairline border.
 struct GlassPanel<Content: View>: View {
     var cornerRadius: CGFloat = Theme.Radius.group
     @ViewBuilder var content: Content
@@ -37,6 +37,5 @@ struct HairlineDivider: View {
         .foregroundStyle(Theme.TextColor.primary)
         .frame(width: 280)
     }
-    .padding(24)
-    .background(Theme.Surface.previewBackdrop)
+    .appearancePreview()
 }

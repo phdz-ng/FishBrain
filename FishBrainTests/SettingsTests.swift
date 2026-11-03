@@ -14,9 +14,9 @@ final class SettingsStorageTests: XCTestCase {
         try? FileManager.default.removeItem(at: directory)
     }
 
-    func testDefaultAccentIsIndigo() {
-        XCTAssertEqual(AppSettings().accent, .indigo)
-        XCTAssertEqual(storage.load().accent, .indigo, "missing file loads defaults")
+    func testDefaultAccentIsOrange() {
+        XCTAssertEqual(AppSettings().accent, .orange)
+        XCTAssertEqual(storage.load().accent, .orange, "missing file loads defaults")
     }
 
     func testEveryAccentRoundTrips() throws {
@@ -35,10 +35,10 @@ final class SettingsStorageTests: XCTestCase {
     func testUnknownAccentAndMissingKeysFallBackToDefaults() throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try Data(#"{"accent":"chartreuse"}"#.utf8).write(to: storage.fileURL)
-        XCTAssertEqual(storage.load().accent, .indigo)
+        XCTAssertEqual(storage.load().accent, .orange)
 
         try Data("{}".utf8).write(to: storage.fileURL)
-        XCTAssertEqual(storage.load().accent, .indigo)
+        XCTAssertEqual(storage.load().accent, .orange)
     }
 
     func testSettingsLiveNextToDecksInTheSameDirectory() throws {

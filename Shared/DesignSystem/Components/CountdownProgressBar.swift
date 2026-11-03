@@ -42,6 +42,5 @@ struct CountdownProgressBar: View {
         CountdownProgressBar(progress: 1)
     }
     .frame(width: 240)
-    .padding(24)
-    .background(Theme.Surface.previewBackdrop)
+    .appearancePreview()
 }

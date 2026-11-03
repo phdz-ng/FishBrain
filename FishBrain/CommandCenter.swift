@@ -37,6 +37,7 @@ final class CommandCenter: ObservableObject {
 
 struct AppCommands: Commands {
     @ObservedObject private var center = CommandCenter.shared
+    @ObservedObject var settings: SettingsStore
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -73,6 +74,14 @@ struct AppCommands: Commands {
                 .disabled(center.showWelcome == nil)
             Button("Add Getting Started Deck") { center.addGettingStarted?() }
                 .disabled(center.addGettingStarted == nil)
+        }
+        // View ▸ Appearance ▸ Light / Dark / Match system, so it can be changed from the keyboard.
+        CommandGroup(after: .toolbar) {
+            Picker("Appearance", selection: $settings.appearance) {
+                ForEach(AppearanceMenuItems.items(selected: settings.appearance), id: \.choice) { item in
+                    Text(item.title).tag(item.choice)
+                }
+            }
         }
         CommandGroup(after: .textEditing) {
             Button("Find Cards") { center.focusSearch?() }

@@ -38,8 +38,6 @@ struct CardStatusChip: View {
         CardStatusChip(status: .upcoming(4 * ReviewScheduler.day))
         CardStatusChip(status: .mastered(90 * ReviewScheduler.day))
     }
-    .padding(24)
-    .background(Theme.Surface.previewBackdrop)
-    .preferredColorScheme(.dark)
+    .appearancePreview()
 }
 #endif

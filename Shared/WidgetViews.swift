@@ -7,6 +7,8 @@ import WidgetKit
 struct FishBrainEntry: TimelineEntry {
     var date: Date
     var accent: AccentChoice
+    /// Light, Dark or Match system, from the app's settings.
+    var appearance: AppearanceChoice = .default
     /// nil when there is no deck, or the deck has no cards (see `emptyState`).
     var showing: NowShowing?
     /// Why there is nothing to show; nil when `showing` is set.
@@ -25,6 +27,7 @@ struct FishBrainEntry: TimelineEntry {
         decks: [Deck],
         playback: [Deck.ID: PlaybackState],
         accent: AccentChoice,
+        appearance: AppearanceChoice = .default,
         at date: Date,
         deckID: Deck.ID? = nil,
         scheduler: CardScheduler = CardScheduler()
@@ -40,6 +43,7 @@ struct FishBrainEntry: TimelineEntry {
         return FishBrainEntry(
             date: date,
             accent: accent,
+            appearance: appearance,
             showing: showing,
             emptyState: emptyState,
             nextRotation: scheduler.nextRotation(after: date)
@@ -50,18 +54,20 @@ struct FishBrainEntry: TimelineEntry {
 
     /// Reads the shared files, and logs what was found (visible with `log show`, no `--info` needed)
     /// so a widget that looks empty can be told apart from one that can't read the library.
-    private static func loadShared() -> (decks: [Deck], playback: [Deck.ID: PlaybackState], accent: AccentChoice) {
+    private static func loadShared() -> (decks: [Deck], playback: [Deck.ID: PlaybackState], accent: AccentChoice, appearance: AppearanceChoice) {
         let directory = AppGroup.storageDirectory()
         let decks = DeckStorage.shared().load()
         let cards = decks.reduce(0) { $0 + $1.cards.count }
         logger.notice("Widget read \(decks.count) decks, \(cards) cards from \(directory.path, privacy: .public)")
-        return (decks, PlaybackStorage.shared().load(), SettingsStorage.shared().load().accent)
+        // Until the app has run once after the update, show what its migration will choose.
+        let settings = LightThemeMigration.apply(SettingsStorage.shared().load()).settings
+        return (decks, PlaybackStorage.shared().load(), settings.accent, settings.appearance)
     }
 
     /// Reads the shared App Group files.
     static func current(at date: Date = Date(), deckID: Deck.ID? = nil) -> FishBrainEntry {
         let shared = loadShared()
-        return make(decks: shared.decks, playback: shared.playback, accent: shared.accent, at: date, deckID: deckID)
+        return make(decks: shared.decks, playback: shared.playback, accent: shared.accent, appearance: shared.appearance, at: date, deckID: deckID)
     }
 
     /// An entry for now plus one for every 5-minute slot boundary within `horizon`, each showing
@@ -72,13 +78,14 @@ struct FishBrainEntry: TimelineEntry {
         decks: [Deck],
         playback: [Deck.ID: PlaybackState],
         accent: AccentChoice,
+        appearance: AppearanceChoice = .default,
         at now: Date,
         deckID: Deck.ID? = nil,
         horizon: TimeInterval = 3600,
         scheduler: CardScheduler = CardScheduler()
     ) -> EntryTimeline {
         func entry(at date: Date) -> FishBrainEntry {
-            make(decks: decks, playback: playback, accent: accent, at: date, deckID: deckID, scheduler: scheduler)
+            make(decks: decks, playback: playback, accent: accent, appearance: appearance, at: date, deckID: deckID, scheduler: scheduler)
         }
 
         let first = entry(at: now)
@@ -100,7 +107,9 @@ struct FishBrainEntry: TimelineEntry {
     /// Timeline for the widget, from the shared App Group files.
     static func currentTimeline(at now: Date = Date(), deckID: Deck.ID? = nil) -> EntryTimeline {
         let shared = loadShared()
-        return timeline(decks: shared.decks, playback: shared.playback, accent: shared.accent, at: now, deckID: deckID)
+        return timeline(
+            decks: shared.decks, playback: shared.playback, accent: shared.accent, appearance: shared.appearance, at: now, deckID: deckID
+        )
     }
 }
 
@@ -132,7 +141,7 @@ struct EntryTimeline: Equatable {
 
 extension FishBrainEntry: Equatable {
     static func == (lhs: FishBrainEntry, rhs: FishBrainEntry) -> Bool {
-        lhs.date == rhs.date && lhs.accent == rhs.accent && lhs.showing == rhs.showing
+        lhs.date == rhs.date && lhs.accent == rhs.accent && lhs.appearance == rhs.appearance && lhs.showing == rhs.showing
             && lhs.emptyState == rhs.emptyState && lhs.nextRotation == rhs.nextRotation
     }
 }
@@ -143,9 +152,13 @@ extension FishBrainEntry {
 
     /// A realistic card, in the user's accent, for the widget gallery's picker; shown instead of
     /// an empty state even when the library is empty.
-    static func gallery(accent: AccentChoice) -> FishBrainEntry { sample(accent: accent) }
+    static func gallery(accent: AccentChoice, appearance: AppearanceChoice = .default) -> FishBrainEntry {
+        sample(accent: accent, appearance: appearance)
+    }
 
-    static func sample(flipped: Bool = false, accent: AccentChoice = .default, longText: Bool = false) -> FishBrainEntry {
+    static func sample(
+        flipped: Bool = false, accent: AccentChoice = .default, appearance: AppearanceChoice = .default, longText: Bool = false
+    ) -> FishBrainEntry {
         let card = longText
             ? Card(
                 front: "What is the difference between a process and a thread in an operating system?",
@@ -158,11 +171,11 @@ extension FishBrainEntry {
         if flipped {
             state = CardScheduler().flipping(state, in: deck, at: now)
         }
-        return make(decks: [deck], playback: [deck.id: state], accent: accent, at: now)
+        return make(decks: [deck], playback: [deck.id: state], accent: accent, appearance: appearance, at: now)
     }
 }
 
-/// The Frosted Midnight widget in small, medium and large. Long text scales down instead of
+/// The widget in small, medium and large, in the app's appearance. Long text scales down instead of
 /// clipping, and the countdown ticks on its own without timeline reloads.
 struct FishBrainWidgetView: View {
     var entry: FishBrainEntry
@@ -199,6 +212,23 @@ struct FishBrainWidgetContent: View {
                 Rectangle().fill(Theme.Blur.window)
                 Rectangle().fill(entry.showing?.isFlipped == true ? entry.accent.flippedSurface : Theme.Surface.widget)
             }
+        }
+        .modifier(WidgetAppearance(choice: entry.appearance))
+    }
+}
+
+/// Light or Dark from the app's setting, while the widget draws its own colors. Match system leaves the
+/// system's choice; so do the tinted and dimmed desktop modes, where macOS picks the colors itself.
+struct WidgetAppearance: ViewModifier {
+    var choice: AppearanceChoice
+
+    @Environment(\.widgetRenderingMode) private var renderingMode
+
+    func body(content: Content) -> some View {
+        if renderingMode == .fullColor, let scheme = choice.colorScheme {
+            content.environment(\.colorScheme, scheme)
+        } else {
+            content
         }
     }
 }

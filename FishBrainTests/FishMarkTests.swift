@@ -31,9 +31,11 @@ final class FishMarkTests: XCTestCase {
         }
     }
 
-    /// Renders at `scale` pixels per point, in the dark scheme the app runs in.
-    private func render<V: View>(_ view: V, accent: AccentChoice = .default, scale: CGFloat = 4) throws -> Pixels {
-        let renderer = ImageRenderer(content: view.environment(\.accentChoice, accent).preferredColorScheme(.dark))
+    private static let schemes: [ColorScheme] = [.light, .dark]
+
+    /// Renders at `scale` pixels per point, in one appearance.
+    private func render<V: View>(_ view: V, accent: AccentChoice = .default, scheme: ColorScheme = .dark, scale: CGFloat = 4) throws -> Pixels {
+        let renderer = ImageRenderer(content: view.environment(\.accentChoice, accent).environment(\.colorScheme, scheme))
         renderer.scale = scale
         return try Pixels(XCTUnwrap(renderer.cgImage))
     }
@@ -44,36 +46,44 @@ final class FishMarkTests: XCTestCase {
         return pixels.rgb(x: Int(Double(pixels.width) / 2 + (designX - 100) * factor), y: Int(designY * factor))
     }
 
-    private func assertColor(_ actual: (r: Double, g: Double, b: Double), _ token: Token, _ message: String, file: StaticString = #filePath, line: UInt = #line) {
-        XCTAssertEqual(actual.r, token.red, accuracy: 0.02, message, file: file, line: line)
-        XCTAssertEqual(actual.g, token.green, accuracy: 0.02, message, file: file, line: line)
-        XCTAssertEqual(actual.b, token.blue, accuracy: 0.02, message, file: file, line: line)
+    private func assertColor(_ actual: (r: Double, g: Double, b: Double), _ token: Token, _ scheme: ColorScheme, _ message: String, file: StaticString = #filePath, line: UInt = #line) {
+        let swatch = token.swatch(for: scheme)
+        XCTAssertEqual(actual.r, swatch.red, accuracy: 0.02, "\(message) in \(scheme)", file: file, line: line)
+        XCTAssertEqual(actual.g, swatch.green, accuracy: 0.02, "\(message) in \(scheme)", file: file, line: line)
+        XCTAssertEqual(actual.b, swatch.blue, accuracy: 0.02, "\(message) in \(scheme)", file: file, line: line)
     }
 
-    func testTheHalvesFollowTheAccent() throws {
-        for accent in AccentChoice.allCases {
-            let rep = try render(FishMark().frame(height: 160), accent: accent)
-            assertColor(try color(rep, designX: 60, designY: 120, height: 160), accent.light, "\(accent) left")
-            assertColor(try color(rep, designX: 140, designY: 120, height: 160), accent.fill, "\(accent) right")
-            // The tail has the same two halves.
-            assertColor(try color(rep, designX: 88, designY: 268, height: 160), accent.light, "\(accent) tail left")
-            assertColor(try color(rep, designX: 112, designY: 268, height: 160), accent.fill, "\(accent) tail right")
+    func testTheHalvesFollowTheAccentInBothAppearances() throws {
+        for scheme in Self.schemes {
+            for accent in AccentChoice.allCases {
+                let rep = try render(FishMark().frame(height: 160), accent: accent, scheme: scheme)
+                assertColor(try color(rep, designX: 60, designY: 120, height: 160), accent.light, scheme, "\(accent) left")
+                assertColor(try color(rep, designX: 140, designY: 120, height: 160), accent.fill, scheme, "\(accent) right")
+                // The tail has the same two halves.
+                assertColor(try color(rep, designX: 88, designY: 268, height: 160), accent.light, scheme, "\(accent) tail left")
+                assertColor(try color(rep, designX: 112, designY: 268, height: 160), accent.fill, scheme, "\(accent) tail right")
+            }
         }
     }
 
     func testTheSolidStyleIsOneColor() throws {
-        let rep = try render(FishMark(style: .solid(Theme.Status.ok), showsEye: false).frame(height: 160))
-        assertColor(try color(rep, designX: 60, designY: 120, height: 160), Theme.Status.ok, "left")
-        assertColor(try color(rep, designX: 140, designY: 120, height: 160), Theme.Status.ok, "right")
-        assertColor(try color(rep, designX: 106, designY: 78, height: 160), Theme.Status.ok, "where the eye would be")
+        for scheme in Self.schemes {
+            let rep = try render(FishMark(style: .solid(Theme.Status.ok), showsEye: false).frame(height: 160), scheme: scheme)
+            assertColor(try color(rep, designX: 60, designY: 120, height: 160), Theme.Status.ok, scheme, "left")
+            assertColor(try color(rep, designX: 140, designY: 120, height: 160), Theme.Status.ok, scheme, "right")
+            assertColor(try color(rep, designX: 106, designY: 78, height: 160), Theme.Status.ok, scheme, "where the eye would be")
+        }
     }
 
     func testTheEyeIsWhiteOnTheSplitUnlessLeftOut() throws {
-        let with = try render(FishMark().frame(height: 160))
-        assertColor(try color(with, designX: 100, designY: 78, height: 160), Theme.TextColor.primary, "eye")
-        let without = try render(FishMark(showsEye: false).frame(height: 160))
-        assertColor(try color(without, designX: 94, designY: 78, height: 160), AccentChoice.default.light, "no eye, left")
-        assertColor(try color(without, designX: 106, designY: 78, height: 160), AccentChoice.default.fill, "no eye, right")
+        let white = Token(0xFFFFFF)
+        for scheme in Self.schemes {
+            let with = try render(FishMark().frame(height: 160), scheme: scheme)
+            assertColor(try color(with, designX: 100, designY: 78, height: 160), white, scheme, "eye")
+            let without = try render(FishMark(showsEye: false).frame(height: 160), scheme: scheme)
+            assertColor(try color(without, designX: 94, designY: 78, height: 160), AccentChoice.default.light, scheme, "no eye, left")
+            assertColor(try color(without, designX: 106, designY: 78, height: 160), AccentChoice.default.fill, scheme, "no eye, right")
+        }
     }
 
     func testTheEyeIsHiddenBelowTwentyPoints() throws {
@@ -83,11 +93,13 @@ final class FishMarkTests: XCTestCase {
         XCTAssertTrue(FishMark.drawsEye(showsEye: true, height: 20))
         XCTAssertFalse(FishMark.drawsEye(showsEye: false, height: 200))
 
-        let big = try render(FishMark().frame(height: 20), scale: 16)
-        assertColor(try color(big, designX: 100, designY: 78, height: 20, scale: 16), Theme.TextColor.primary, "eye at 20 pt")
-        let small = try render(FishMark().frame(height: 19), scale: 16)
-        let pixel = try color(small, designX: 94, designY: 78, height: 19, scale: 16)
-        XCTAssertNotEqual(pixel.r, 1, accuracy: 0.05, "no eye at 19 pt")
+        for scheme in Self.schemes {
+            let big = try render(FishMark().frame(height: 20), scheme: scheme, scale: 16)
+            assertColor(try color(big, designX: 100, designY: 78, height: 20, scale: 16), Token(0xFFFFFF), scheme, "eye at 20 pt")
+            let small = try render(FishMark().frame(height: 19), scheme: scheme, scale: 16)
+            let pixel = try color(small, designX: 94, designY: 78, height: 19, scale: 16)
+            XCTAssertNotEqual(pixel.b, 1, accuracy: 0.05, "no eye at 19 pt in \(scheme)")
+        }
     }
 
     func testTheCornersAreSharpWhenSmall() {

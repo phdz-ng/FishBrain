@@ -5,8 +5,8 @@ import XCTest
 @MainActor
 final class ComponentTests: XCTestCase {
     /// Renders at 2x so thin strokes and small fills are sampleable.
-    private func render<V: View>(_ view: V, accent: AccentChoice = .default) throws -> CGImage {
-        let renderer = ImageRenderer(content: view.environment(\.accentChoice, accent).preferredColorScheme(.dark))
+    private func render<V: View>(_ view: V, accent: AccentChoice = .default, scheme: ColorScheme = .dark) throws -> CGImage {
+        let renderer = ImageRenderer(content: view.environment(\.accentChoice, accent).environment(\.colorScheme, scheme))
         renderer.scale = 2
         return try XCTUnwrap(renderer.cgImage)
     }
@@ -19,9 +19,12 @@ final class ComponentTests: XCTestCase {
     }
 
     /// Which accent's fill (or `light`) the pixel is closest to.
-    private func nearestAccent(_ rgb: (r: Double, g: Double, b: Double, a: Double), using style: (AccentChoice) -> Token) -> AccentChoice {
-        func distance(_ t: Token) -> Double {
-            pow(t.red - rgb.r, 2) + pow(t.green - rgb.g, 2) + pow(t.blue - rgb.b, 2)
+    private func nearestAccent(
+        _ rgb: (r: Double, g: Double, b: Double, a: Double), using style: (AccentChoice) -> Token, scheme: ColorScheme = .dark
+    ) -> AccentChoice {
+        func distance(_ token: Token) -> Double {
+            let t = token.swatch(for: scheme)
+            return pow(t.red - rgb.r, 2) + pow(t.green - rgb.g, 2) + pow(t.blue - rgb.b, 2)
         }
         return AccentChoice.allCases.min { distance(style($0)) < distance(style($1)) }!
     }
@@ -29,11 +32,27 @@ final class ComponentTests: XCTestCase {
     // MARK: Accent applies everywhere
 
     func testPrimaryButtonFollowsAccent() throws {
-        for accent in AccentChoice.allCases {
-            let image = try render(Button("Add Card") {}.buttonStyle(.capsulePrimary), accent: accent)
-            let p = try pixel(image, x: 12, y: 17) // inside the capsule, left of the label
-            XCTAssertEqual(nearestAccent(p, using: \.fill), accent)
+        for scheme in [ColorScheme.light, .dark] {
+            for accent in AccentChoice.allCases {
+                let image = try render(Button("Add Card") {}.buttonStyle(.capsulePrimary), accent: accent, scheme: scheme)
+                let p = try pixel(image, x: 12, y: 17) // inside the capsule, left of the label
+                XCTAssertEqual(nearestAccent(p, using: \.fill, scheme: scheme), accent, "\(scheme)")
+            }
         }
+    }
+
+    /// The same view drawn in light and in dark picks each appearance's value.
+    func testComponentsDrawTheValueForTheirAppearance() throws {
+        let control = Theme.Surface.control
+        let light = try pixel(render(Button("Import") {}.buttonStyle(.capsuleSecondary), scheme: .light), x: 12, y: 17)
+        let dark = try pixel(render(Button("Import") {}.buttonStyle(.capsuleSecondary), scheme: .dark), x: 12, y: 17)
+        XCTAssertEqual(light.a, control.light.opacity, accuracy: 0.02)
+        XCTAssertEqual(dark.a, control.dark.opacity, accuracy: 0.02)
+
+        let lightRow = try pixel(render(SidebarRow(name: "Deck", count: 3, color: .green).frame(width: 200)
+            .background(AccentChoice.orange.sidebar), scheme: .light), x: 100, y: 3)
+        XCTAssertEqual(lightRow.r, 1, accuracy: 0.02, "light sidebar is the pale orange tint")
+        XCTAssertLessThan(lightRow.b, 0.96)
     }
 
     func testSecondaryButtonIgnoresAccent() throws {
@@ -100,7 +119,7 @@ final class ComponentTests: XCTestCase {
         let image = try render(bar)
         let filled = try pixel(image, x: 25, y: 4)
         let empty = try pixel(image, x: 75, y: 4)
-        XCTAssertEqual(nearestAccent(filled, using: \.light), .indigo)
+        XCTAssertEqual(nearestAccent(filled, using: \.light), .default)
         XCTAssertGreaterThan(filled.a, 0.95)
         XCTAssertLessThan(empty.a, 0.3, "unfilled part shows only the faint track")
     }
@@ -113,6 +132,7 @@ final class ComponentTests: XCTestCase {
     func testEveryComponentRendersForEveryAccent() throws {
         for accent in AccentChoice.allCases {
             let image = try render(ComponentGallery(accent: accent), accent: accent)
+            XCTAssertGreaterThan(image.width, image.height, "light and dark side by side")
             XCTAssertGreaterThan(image.width, 100)
             XCTAssertGreaterThan(image.height, 100)
 

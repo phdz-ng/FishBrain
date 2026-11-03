@@ -302,19 +302,19 @@ private struct EditButtons: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            button("Cancel", fill: Theme.TextColor.primary.with(opacity: 0.11), action: onCancel)
+            button("Cancel", fill: Theme.TextColor.primary.with(opacity: 0.11), text: Theme.TextColor.primary, action: onCancel)
                 .accessibilityHint("Keeps the card as it was")
-            button("Save", fill: accent.fill, action: onSave)
+            button("Save", fill: accent.fill, text: Theme.TextColor.onAccent, action: onSave)
                 .accessibilityHint("Saves the change to this side")
         }
     }
 
-    private func button(_ title: String, fill: Token, action: @escaping () -> Void) -> some View {
+    private func button(_ title: String, fill: Token, text: Token, action: @escaping () -> Void) -> some View {
         let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
         return Button(action: action) {
             Text(title)
                 .font(Theme.Typography.footnote.weight(.semibold))
-                .foregroundStyle(Theme.TextColor.primary)
+                .foregroundStyle(text)
                 .frame(maxWidth: .infinity, minHeight: 48)
                 .background(shape.fill(fill))
                 .contentShape(shape)
@@ -409,9 +409,7 @@ extension NowShowingPanel {
         )
         NowShowingPanel(deck: Deck(name: "Empty"), state: PlaybackState(), onFlip: {}, onSkip: {})
     }
-    .padding(24)
-    .background(Theme.Surface.previewBackdrop)
-    .preferredColorScheme(.dark)
+    .appearancePreview()
 }
 
 #Preview("Now showing, editing") {
@@ -419,8 +417,6 @@ extension NowShowingPanel {
     let edit = PreviewCardEdit()
     if let showing = NowShowing.make(deck: deck, state: PlaybackState(), at: Date()) { edit.begin(showing) }
     return NowShowingPanel(deck: deck, state: PlaybackState(), onFlip: {}, onSkip: {}, studySummary: { _ in .sample }, edit: edit)
-        .padding(24)
-        .background(Theme.Surface.previewBackdrop)
-        .preferredColorScheme(.dark)
+        .appearancePreview()
 }
 #endif

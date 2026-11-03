@@ -26,6 +26,8 @@ struct SubjectPageView: View {
     var onImport: () -> Void = {}
     /// Why Export… is off (nothing to export), or nil.
     var exportReason: String?
+    /// The appearance setting, for the round button after Review…; nil leaves it out.
+    var appearance: Binding<AppearanceChoice>?
 
     @EnvironmentObject private var store: DeckStore
     @EnvironmentObject private var playback: PlaybackStore
@@ -102,6 +104,7 @@ struct SubjectPageView: View {
             Spacer(minLength: 16)
             HStack(spacing: 8) {
                 subjectButtons(summary)
+                if let appearance { AppearanceButton(selection: appearance) }
                 moreMenu
                 newMenu
             }

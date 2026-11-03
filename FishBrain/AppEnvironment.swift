@@ -35,6 +35,13 @@ final class AppEnvironment {
             settingsStore = PreviewData.settings()
             // `-FishBrainSkipWelcome` starts without the welcome sheet, for screenshots.
             if ProcessInfo.processInfo.arguments.contains("-FishBrainSkipWelcome") { settingsStore.hasSeenWelcome = true }
+            // `-FishBrainAppearance dark` (or light, system) and `-FishBrainAccent teal`, for screenshots.
+            if let raw = UserDefaults.standard.string(forKey: "FishBrainAppearance"), let choice = AppearanceChoice(rawValue: raw) {
+                settingsStore.appearance = choice
+            }
+            if let raw = UserDefaults.standard.string(forKey: "FishBrainAccent"), let choice = AccentChoice(rawValue: raw) {
+                settingsStore.accent = choice
+            }
             let sampleDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("FishBrainSample-\(UUID().uuidString)")
             studyStore = StudyStore(storage: StudyStorage(directory: sampleDirectory))
             runHistoryStore = RunHistoryStore(storage: RunHistoryStorage(directory: sampleDirectory))

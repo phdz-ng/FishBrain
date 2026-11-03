@@ -46,8 +46,7 @@ struct SearchField: View {
         var body: some View {
             SearchField(text: $text, prompt: "Search cards", isFocused: $focused)
                 .frame(width: 216)
-                .padding(24)
-                .background(Theme.Surface.previewBackdrop)
+                .appearancePreview()
         }
     }
     return Demo()

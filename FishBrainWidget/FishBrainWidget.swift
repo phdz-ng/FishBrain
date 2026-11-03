@@ -11,7 +11,8 @@ struct FishBrainProvider: AppIntentTimelineProvider {
     func snapshot(for configuration: SelectDeckIntent, in context: Context) async -> FishBrainEntry {
         // The gallery's picker should always show a realistic card, even for an empty library.
         if context.isPreview {
-            return FishBrainEntry.gallery(accent: SettingsStorage.shared().load().accent)
+            let settings = LightThemeMigration.apply(SettingsStorage.shared().load()).settings
+            return FishBrainEntry.gallery(accent: settings.accent, appearance: settings.appearance)
         }
         return FishBrainEntry.current(deckID: configuration.deck?.id)
     }
@@ -52,6 +53,8 @@ struct FishBrainWidget: Widget {
 } timeline: {
     FishBrainEntry.sample()
     FishBrainEntry.sample(flipped: true, accent: .teal)
+    FishBrainEntry.sample(appearance: .dark)
+    FishBrainEntry.sample(flipped: true, appearance: .dark)
     FishBrainEntry.sample(longText: true)
 }
 

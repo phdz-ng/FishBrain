@@ -415,6 +415,6 @@ final class NotchControllerTests: XCTestCase {
     func testTheAccentFollowsTheSetting() throws {
         let rig = try makeRig(decks: [sampleDeck()]) { [notched] in [notched] }
         rig.controller.start()
-        XCTAssertEqual(rig.controller.model.accent, .indigo)
+        XCTAssertEqual(rig.controller.model.accent, .orange)
     }
 }

@@ -87,6 +87,5 @@ struct PasteCardsSheet: View {
 #if DEBUG
 #Preview("Paste Cards") {
     PasteCardsSheet(deckName: "Everyday Spanish", onAdd: { _ in }, onCancel: {})
-        .preferredColorScheme(.dark)
 }
 #endif

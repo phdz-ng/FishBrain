@@ -73,7 +73,7 @@ struct SubjectIcon: View {
             .frame(width: size, height: size)
             .overlay {
                 SubjectGlyph()
-                    .stroke(Theme.TextColor.primary, style: StrokeStyle(lineWidth: glyph * 2 / 24, lineCap: .round, lineJoin: .round))
+                    .stroke(Theme.TextColor.onAccent, style: StrokeStyle(lineWidth: glyph * 2 / 24, lineCap: .round, lineJoin: .round))
                     .frame(width: glyph, height: glyph)
             }
             .accessibilityHidden(true)
@@ -96,7 +96,7 @@ struct SidebarSubjectRow: View {
                 Button(action: onToggle) {
                     Image(systemName: row.isExpanded ? "chevron.down" : "chevron.right")
                         .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(row.isSelected ? Theme.TextColor.primary : Theme.TextColor.secondary)
+                        .foregroundStyle(row.isSelected ? Theme.TextColor.onAccent : Theme.TextColor.secondary)
                         .frame(width: 18, height: 28)
                         .contentShape(Rectangle())
                 }
@@ -108,16 +108,16 @@ struct SidebarSubjectRow: View {
                     SubjectIcon(color: row.color, size: row.indent == 0 ? 22 : 20, isOnAccent: row.isSelected)
                     Text(row.name)
                         .font(Theme.Typography.rowTitle.weight(row.isSelected || row.isMarked ? .medium : .regular))
-                        .foregroundStyle(Theme.TextColor.primary)
+                        .foregroundStyle(row.isSelected ? Theme.TextColor.onAccent : Theme.TextColor.primary)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Text("\(row.cardCount)")
                         .font(Theme.Typography.caption)
-                        .foregroundStyle(row.isSelected || row.isMarked ? Theme.TextColor.cardBack : Theme.TextColor.secondary)
+                        .foregroundStyle(row.isSelected ? Theme.TextColor.onAccent : row.isMarked ? Theme.TextColor.cardBack : Theme.TextColor.secondary)
                     if row.opensPage {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(row.isMarked ? Theme.TextColor.cardBack : Theme.TextColor.secondary)
+                            .foregroundStyle(row.isSelected ? Theme.TextColor.onAccent : row.isMarked ? Theme.TextColor.cardBack : Theme.TextColor.secondary)
                             .accessibilityHidden(true)
                     }
                 }
@@ -218,9 +218,7 @@ struct NewMenuButton: View {
         }
     }
     .frame(width: 228)
-    .padding(12)
-    .background(Theme.Surface.previewBackdrop)
-    .preferredColorScheme(.dark)
+    .appearancePreview()
 }
 #endif
 
@@ -296,7 +294,8 @@ struct LibraryDropTargetModifier: ViewModifier {
                             RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.Surface.notch.color).opacity(0.94)
                             Text(reason)
                                 .font(Theme.Typography.footnote)
-                                .foregroundStyle(Theme.Status.problem.color)
+                                // On black in every appearance, so the dark value.
+                                .foregroundStyle(Theme.Status.problem.dark.color)
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.8)
                                 .padding(.horizontal, 8)

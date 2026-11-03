@@ -497,9 +497,7 @@ private struct EmptyCardsState: View {
         .environmentObject(PreviewData.store())
         .environmentObject(PreviewData.playback())
         .frame(width: 640, height: 360)
-        .padding(24)
-        .background(Theme.Surface.previewBackdrop)
-        .preferredColorScheme(.dark)
+        .appearancePreview()
 }
 
 #Preview("Card editor, empty") {
@@ -507,8 +505,6 @@ private struct EmptyCardsState: View {
         .environmentObject(PreviewData.store())
         .environmentObject(PreviewData.playback())
         .frame(width: 640, height: 300)
-        .padding(24)
-        .background(Theme.Surface.previewBackdrop)
-        .preferredColorScheme(.dark)
+        .appearancePreview()
 }
 #endif

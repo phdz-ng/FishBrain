@@ -117,7 +117,7 @@ struct CSVBuildCardStep: View {
                     .font(.system(size: 9, weight: .bold))
                     .accessibilityHidden(true)
             }
-            .foregroundStyle(Theme.TextColor.primary)
+            .foregroundStyle(Theme.TextColor.onAccent)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .background(Capsule().fill(accent.fill))

@@ -119,6 +119,5 @@ struct CardPicture: View {
         CardFace(text: "lingering at the table after a meal", isBack: true, size: .small)
     }
     .frame(width: 360, height: 140)
-    .padding(24)
-    .background(Theme.Surface.previewBackdrop)
+    .appearancePreview()
 }
