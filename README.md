@@ -99,7 +99,6 @@ and every push to `main`.
 - [Making cards with AI](docs/AI.md): providers, settings, the Create with AI screens
 - [Development notes](docs/DEVELOPMENT.md): storage, the widget, signing and the App Group, targets
 - [Releasing](docs/RELEASING.md) and the [changelog](CHANGELOG.md)
-- [QA notes](docs/QA.md)
 
 ## Contributing
 
