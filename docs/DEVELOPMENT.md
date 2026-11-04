@@ -98,7 +98,7 @@ with a team.
 
 ## The widget's deck choice in the app
 
-`SelectDeckIntent` and `DeckEntity` live in their own framework, `FishBrainIntents`, which both the app and
+`SelectDeckIntent` and `DeckEntity` live in their own static library, `FishBrainIntents`, which both the app and
 the widget link, so the app can read what each placed widget is set to (`WidgetDeckCountStore`, for the
 sidebar's widget badges). Keep them out of `Shared/`: App Intents names a type by its module, and `Shared/`
 is compiled into the app and the widget separately, so two copies are two different types and the widget
