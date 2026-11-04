@@ -176,6 +176,12 @@ final class NotchModel: ObservableObject {
     @Published var cardDraft: CardDraft?
     /// The decks a new card can go in, for the editor's deck menu.
     @Published var deckChoices: [DeckChoice] = []
+    /// The open notch's deck menu: decks grouped under their subjects, as in the sidebar footer.
+    @Published var deckMenu: [NotchDeckMenuSection] = []
+    /// The deck the notch shows (the session's while one runs), even when it has no cards.
+    @Published var shownDeck: DeckChoice?
+    /// The notch's deck can't be switched while its study session runs; the session decides it.
+    var isDeckLocked: Bool { session.isNotchSession }
     /// The camera housing's height (or the menu bar's); expanded content starts below it.
     @Published var notchHeight: CGFloat = 33
     /// When the card next changes; drives the countdown and progress bar.
@@ -206,6 +212,8 @@ final class NotchModel: ObservableObject {
     var onGoToSprint: () -> Void = {}
     var onFlip: () -> Void = {}
     var onSkip: () -> Void = {}
+    /// A deck was chosen from the open notch's deck menu.
+    var onChooseDeck: (Deck.ID) -> Void = { _ in }
     /// Opens or closes the notch without the mouse (VoiceOver, where there is no hovering).
     var onToggleExpanded: () -> Void = {}
 }
@@ -368,10 +376,7 @@ struct NotchRootView: View {
         } else if let showing = model.showing {
             VStack(spacing: 10) {
                 HStack(spacing: 8) {
-                    DeckIcon(color: showing.deckColor, size: 18)
-                    Text(showing.deckName)
-                        .font(Theme.Typography.footnote.weight(.semibold))
-                        .lineLimit(1)
+                    NotchDeckHeader(model: model, color: showing.deckColor, name: showing.deckName)
                     Spacer(minLength: 8)
                     Text("\(showing.position) of \(showing.total)")
                         .font(Theme.Typography.micro)
@@ -443,10 +448,23 @@ struct NotchRootView: View {
             .accessibilityLabel("Study card, \(showing.accessibilitySummary)")
             .accessibilityAction(named: "Close card") { model.onToggleExpanded() }
         } else {
-            Text("Open FishBrain to add cards")
-                .font(Theme.Typography.caption)
-                .foregroundStyle(Theme.TextColor.primary.with(opacity: 0.62))
-                .padding(.top, NotchCard.contentTopInset(notchHeight: model.notchHeight))
+            VStack(spacing: 10) {
+                // An empty deck keeps its menu, so another deck is one click away.
+                if let deck = model.shownDeck {
+                    HStack(spacing: 8) {
+                        NotchDeckHeader(model: model, color: model.emptyDeckColor ?? .accent, name: deck.name)
+                        Spacer(minLength: 8)
+                    }
+                    .foregroundStyle(Theme.TextColor.primary.with(opacity: 0.62))
+                }
+                Text("Open FishBrain to add cards")
+                    .font(Theme.Typography.caption)
+                    .foregroundStyle(Theme.TextColor.primary.with(opacity: 0.62))
+                    .frame(maxHeight: model.shownDeck == nil ? nil : .infinity)
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, NotchCard.contentTopInset(notchHeight: model.notchHeight))
+            .padding(.bottom, 16)
         }
     }
 
@@ -454,6 +472,56 @@ struct NotchRootView: View {
         CardFace(text: text, isBack: isBack, size: .small, minimumScaleFactor: 0.5, image: image, useThumbnail: true)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Theme.TextColor.primary.with(opacity: 0.09)))
+    }
+}
+
+/// The deck icon and name at the top of the open notch. A menu of every deck, like the sidebar footer's;
+/// while a notch study session runs it is plain text, since the session decides the deck until it ends.
+struct NotchDeckHeader: View {
+    @ObservedObject var model: NotchModel
+    var color: DeckColor
+    var name: String
+
+    private var label: some View {
+        HStack(spacing: 8) {
+            DeckIcon(color: color, size: 18)
+            Text(name)
+                .font(Theme.Typography.footnote.weight(.semibold))
+                .lineLimit(1)
+        }
+    }
+
+    var body: some View {
+        if model.isDeckLocked {
+            label
+                .help(NotchDeckMenuModel.lockedHint)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(NotchDeckMenuModel.accessibilityLabel)
+                .accessibilityValue(name)
+                .accessibilityHint(NotchDeckMenuModel.lockedHint)
+        } else {
+            Menu {
+                NotchDeckMenu(sections: model.deckMenu, currentID: model.shownDeck?.id, onChoose: model.onChooseDeck)
+            } label: {
+                HStack(spacing: 4) {
+                    label
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 8, weight: .semibold))
+                        .accessibilityHidden(true)
+                }
+                .foregroundStyle(Theme.TextColor.primary.with(opacity: 0.62))
+                .contentShape(Rectangle())
+            }
+            // The button style draws the label as it is; the borderless style keeps only a text and an
+            // image, which drops the deck icon and puts the chevron first.
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityLabel(NotchDeckMenuModel.accessibilityLabel)
+            .accessibilityValue(name)
+            .accessibilityHint(NotchDeckMenuModel.hint)
+        }
     }
 }
 
@@ -649,6 +717,7 @@ final class NotchController {
 
         model.onFlip = { [weak self] in self?.flipCurrent() }
         model.onSkip = { [weak self] in self?.skipCurrent() }
+        model.onChooseDeck = { [weak self] id in self?.chooseDeck(id) }
         model.onAcceptOffer = { [weak self] in self?.acceptOffer() }
         model.onSaveDraft = { [weak self] in self?.saveDraft() }
         model.onCancelDraft = { [weak self] in self?.cancelDraft() }
@@ -686,6 +755,14 @@ final class NotchController {
             (center, center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated { self?.refreshContent() }
             })
+        }
+        // A menu open in the notch (the deck menu) hangs below it: keep the notch open until it closes.
+        for (name, tracking) in [(NSMenu.didBeginTrackingNotification, true), (NSMenu.didEndTrackingNotification, false)] {
+            timeObservers.append((NotificationCenter.default, NotificationCenter.default.addObserver(
+                forName: name, object: nil, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.menuTrackingChanged(tracking) }
+            }))
         }
         // Nothing at rest animates while the panel can't be seen: the display asleep, the screen
         // locked or the panel covered (both show up as the panel no longer being visible).
@@ -844,6 +921,10 @@ final class NotchController {
         applyBanner(at: date)
         let choices = deckStore.decks.map { DeckChoice(id: $0.id, name: $0.name) }
         if model.deckChoices != choices { model.deckChoices = choices }
+        let menu = NotchDeckMenuModel.sections(decks: deckStore.decks, subjects: deckStore.subjects)
+        if model.deckMenu != menu { model.deckMenu = menu }
+        let shown = deck.map { DeckChoice(id: $0.id, name: $0.name) }
+        if model.shownDeck != shown { model.shownDeck = shown }
         let style = PillStyle.resolved(settingsStoreProvider().pillStyle)
         if model.pillStyle != style { model.pillStyle = style }
         reposition()
@@ -961,6 +1042,14 @@ final class NotchController {
         refreshContent()
     }
 
+    /// The open notch's deck menu: the notch shows that deck from now on, and stays open. Not during a
+    /// notch study session, whose deck is fixed until it ends.
+    func chooseDeck(_ id: Deck.ID) {
+        guard sessionStoreProvider?().active == nil, deckStore.decks.contains(where: { $0.id == id }) else { return }
+        settingsStoreProvider().notchDeckID = id
+        refreshContent()
+    }
+
     func skipCurrent() {
         guard let deck = shownDeck else { return }
         if let sessions = sessionStoreProvider?(), sessions.active != nil {
@@ -1059,12 +1148,23 @@ final class NotchController {
     var isListeningForChanges: Bool { watcher != nil }
     var hasRotationTimer: Bool { rotationTimer != nil }
 
+    /// Whether a menu is open (one of the notch's, while it is open): the notch then stays open.
+    private(set) var isMenuTracking = false
+
+    func menuTrackingChanged(_ tracking: Bool) {
+        isMenuTracking = tracking
+        if tracking {
+            pendingCollapse?.cancel()
+            pendingCollapse = nil
+        }
+    }
+
     /// Decides from the pointer position whether to open or close.
     func handlePointer(_ pointer: CGPoint) {
         guard panel != nil, isShowing else { return }
         if model.isExpanded {
-            // Writing a card: the notch stays open however the pointer wanders.
-            if model.cardDraft != nil {
+            // Writing a card, or choosing from a menu: the notch stays open however the pointer wanders.
+            if model.cardDraft != nil || isMenuTracking {
                 pendingCollapse?.cancel()
                 pendingCollapse = nil
                 return

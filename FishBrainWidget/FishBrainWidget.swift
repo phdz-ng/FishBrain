@@ -26,7 +26,7 @@ struct FishBrainProvider: AppIntentTimelineProvider {
 }
 
 struct FishBrainWidget: Widget {
-    let kind = "FishBrainWidget"
+    let kind = DeckWidgetKind.kind
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: SelectDeckIntent.self, provider: FishBrainProvider()) { entry in
@@ -46,6 +46,8 @@ struct FishBrainWidget: Widget {
     FishBrainEntry.sample()
     FishBrainEntry.sample(flipped: true)
     FishBrainEntry.sample(longText: true)
+    FishBrainEntry.sample(deckName: "Spanish irregular verbs in the past tense", deckColor: .green)
+    FishBrainEntry.sample(flipped: true, appearance: .dark, deckName: "Spanish irregular verbs in the past tense", deckColor: .green)
 }
 
 #Preview("Medium", as: .systemMedium) {
@@ -63,6 +65,7 @@ struct FishBrainWidget: Widget {
 } timeline: {
     FishBrainEntry.make(decks: [], playback: [:], accent: .indigo, at: Date())
     FishBrainEntry.make(decks: [Deck(name: "Everyday Spanish")], playback: [:], accent: .indigo, at: Date())
+    FishBrainEntry.make(decks: [Deck(name: "Everyday Spanish")], playback: [:], accent: .indigo, at: Date(), deckID: UUID())
 }
 
 #Preview("Large", as: .systemLarge) {

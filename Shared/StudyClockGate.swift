@@ -106,6 +106,9 @@ final class StudyClockGate: ObservableObject {
 
     var isSprintRunning: Bool { sprint != nil }
 
+    /// The deck of the notch study session that is running; nil when none is.
+    var sessionDeckID: UUID? { sessions.active?.deckID }
+
     /// Start session is available only when no clock is running.
     var canStartSession: Bool { sprint == nil && sessions.active == nil }
 

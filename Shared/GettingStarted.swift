@@ -83,4 +83,14 @@ enum Welcome {
         }
         return steps
     }
+
+    /// The line a deck's "Widgets…" adds to the widget step: apps can't add or change widgets themselves.
+    static let showThisDeck = "To show this deck, right-click the widget and choose Edit Widget."
+
+    /// A deck's "Widgets…" in the sidebar: the welcome sheet's widget step, with one line for that deck.
+    static func widgetHelp() -> [Step] {
+        guard var step = steps(hasGettingStartedDeck: false).first else { return [] }
+        step.detail += " " + showThisDeck
+        return [step]
+    }
 }

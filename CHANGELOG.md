@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **See and switch which deck plays where.** The deck name at the top of the open notch is now a menu, so
+  you can switch the notch's deck right there (not during a notch study session, which keeps its deck until
+  it ends; the sidebar menu then reads "After this session: <deck>"). Deck rows in the sidebar show a notch
+  glyph for the notch's deck and a widget glyph with a count for the widgets showing it, and a deck's
+  right-click menu has **Show in Notch** and **Widgets…**. The small widget now shows the deck's color icon,
+  like the medium and large ones. A widget whose deck was deleted says "This deck was deleted" instead of
+  quietly switching to the first deck; right-click it and choose Edit Widget to pick another.
 - **Light theme, and a new Orange accent.** FishBrain now opens in light: a white window and cards, a
   sidebar tinted by your accent, and Orange as the new default accent. After the update everyone starts in
   light; if you had the old default Indigo you now have Orange, and Blue, Purple or Teal are kept. To go

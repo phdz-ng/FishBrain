@@ -40,8 +40,8 @@ enum DeckSelection {
         return decks[min(max(current + step, 0), decks.count - 1)].id
     }
 
-    /// The deck to show: the selected one if it still exists, otherwise the first deck. Widgets
-    /// and the notch use the same rule, so deleting a deck they show falls back to the first.
+    /// The deck to show: the selected one if it still exists, otherwise the first deck. The notch
+    /// uses this rule; a widget whose chosen deck was deleted says so instead (`WidgetEmptyState.deckDeleted`).
     static func resolve(_ selection: Deck.ID?, in decks: [Deck]) -> Deck? {
         decks.first { $0.id == selection } ?? decks.first
     }

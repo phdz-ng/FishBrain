@@ -4,6 +4,8 @@ import SwiftUI
 /// notch going.
 struct WelcomeSheet: View {
     var hasGettingStartedDeck: Bool
+    /// Opened from a deck's "Widgets…": only the widget step, with a line on showing that deck.
+    var widgetHelpDeckName: String?
     var onDismiss: () -> Void
 
     @Environment(\.accentChoice) private var accent
@@ -11,13 +13,15 @@ struct WelcomeSheet: View {
     private static let icons = ["rectangle.on.rectangle", "menubar.rectangle", "sparkles"]
 
     var body: some View {
-        let steps = Welcome.steps(hasGettingStartedDeck: hasGettingStartedDeck)
+        let steps = widgetHelpDeckName == nil ? Welcome.steps(hasGettingStartedDeck: hasGettingStartedDeck) : Welcome.widgetHelp()
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Welcome to FishBrain")
+                Text(widgetHelpDeckName.map { "Show “\($0)” on a widget" } ?? "Welcome to FishBrain")
                     .font(Theme.Typography.title)
                     .foregroundStyle(Theme.TextColor.primary)
-                Text("Flashcards that come to you: on your desktop and in the notch.")
+                Text(widgetHelpDeckName == nil
+                     ? "Flashcards that come to you: on your desktop and in the notch."
+                     : "macOS lets you add and change widgets, not apps, so it takes a moment on the desktop.")
                     .font(Theme.Typography.body)
                     .foregroundStyle(Theme.TextColor.secondary)
             }
@@ -65,5 +69,9 @@ struct WelcomeSheet: View {
 #if DEBUG
 #Preview("Welcome") {
     WelcomeSheet(hasGettingStartedDeck: true, onDismiss: {})
+}
+
+#Preview("Widgets… for a deck") {
+    WelcomeSheet(hasGettingStartedDeck: false, widgetHelpDeckName: "Everyday Spanish", onDismiss: {})
 }
 #endif

@@ -153,10 +153,16 @@ struct SidebarSubjectRow: View {
 /// A deck in the sidebar, indented one level when it is inside a subject.
 struct SidebarDeckRow: View {
     var row: LibraryOutline.DeckRow
+    /// Where the deck is playing: badges after its name (FLAS-107).
+    var places: DeckPlaces = .none
 
     var body: some View {
-        SidebarRow(name: row.name, count: row.cardCount, color: row.color, isSelected: row.isSelected, isPicked: row.isPicked)
-            .padding(.leading, row.indent == 0 ? 0 : 14)
+        SidebarRow(
+            name: row.name, count: row.cardCount, color: row.color, isSelected: row.isSelected, isPicked: row.isPicked,
+            badges: places.isEmpty ? nil : AnyView(DeckPlacesBadges(places: places, isSelected: row.isSelected)),
+            accessibilityDetail: places.phrase
+        )
+        .padding(.leading, row.indent == 0 ? 0 : 14)
     }
 }
 

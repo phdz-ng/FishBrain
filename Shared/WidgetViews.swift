@@ -22,7 +22,8 @@ struct FishBrainEntry: TimelineEntry {
         return DeepLink.app
     }
 
-    /// Shows the chosen deck, or the first deck when none was chosen or the chosen one was deleted.
+    /// Shows the chosen deck, or the first deck when none was chosen. A chosen deck that was deleted
+    /// says so (`.deckDeleted`) rather than quietly showing another deck.
     static func make(
         decks: [Deck],
         playback: [Deck.ID: PlaybackState],
@@ -32,6 +33,12 @@ struct FishBrainEntry: TimelineEntry {
         deckID: Deck.ID? = nil,
         scheduler: CardScheduler = CardScheduler()
     ) -> FishBrainEntry {
+        if let deckID, !decks.isEmpty, !decks.contains(where: { $0.id == deckID }) {
+            return FishBrainEntry(
+                date: date, accent: accent, appearance: appearance, showing: nil, emptyState: .deckDeleted,
+                nextRotation: scheduler.nextRotation(after: date)
+            )
+        }
         let deck = DeckSelection.resolve(deckID, in: decks)
         let showing = deck.flatMap {
             NowShowing.make(deck: $0, state: playback[$0.id] ?? PlaybackState(), at: date, scheduler: scheduler)
@@ -117,11 +124,14 @@ struct FishBrainEntry: TimelineEntry {
 enum WidgetEmptyState: Equatable, Sendable {
     case noDecks
     case emptyDeck(id: Deck.ID, name: String)
+    /// The deck this widget was set to was deleted. (With no decks left at all it is `noDecks`.)
+    case deckDeleted
 
     var title: String {
         switch self {
         case .noDecks: "Open FishBrain to create your first deck"
         case .emptyDeck(_, let name): "Add cards to “\(name)”"
+        case .deckDeleted: "This deck was deleted"
         }
     }
 
@@ -129,6 +139,7 @@ enum WidgetEmptyState: Equatable, Sendable {
         switch self {
         case .noDecks: nil
         case .emptyDeck: "Open FishBrain to add some."
+        case .deckDeleted: "Right-click and choose Edit Widget to pick another."
         }
     }
 }
@@ -157,7 +168,8 @@ extension FishBrainEntry {
     }
 
     static func sample(
-        flipped: Bool = false, accent: AccentChoice = .default, appearance: AppearanceChoice = .default, longText: Bool = false
+        flipped: Bool = false, accent: AccentChoice = .default, appearance: AppearanceChoice = .default, longText: Bool = false,
+        deckName: String = "Everyday Spanish", deckColor: DeckColor = .accent
     ) -> FishBrainEntry {
         let card = longText
             ? Card(
@@ -165,7 +177,7 @@ extension FishBrainEntry {
                 back: "A process has its own address space and resources; threads share the memory and resources of their process, so they are cheaper to create and switch between."
             )
             : Card(front: "la sobremesa", back: "lingering at the table after a meal")
-        let deck = Deck(name: "Everyday Spanish", color: .accent, cards: (0..<48).map { _ in Card(front: card.front, back: card.back) })
+        let deck = Deck(name: deckName, color: deckColor, cards: (0..<48).map { _ in Card(front: card.front, back: card.back) })
         let now = Date()
         var state = PlaybackState()
         if flipped {
@@ -233,13 +245,19 @@ struct WidgetAppearance: ViewModifier {
     }
 }
 
-private struct SmallWidgetContent: View {
+struct SmallWidgetContent: View {
+    /// Medium and large use 18 pt.
+    static let iconSize: CGFloat = 14
+
     var showing: NowShowing
 
     var body: some View {
         VStack(spacing: 0) {
             // Outside the flip button, so tapping the header opens the app on this deck.
-            HStack {
+            // The deck's color icon tells several small widgets apart; it keeps the deck color on a
+            // flipped card, and VoiceOver skips it (the name is read already).
+            HStack(spacing: 6) {
+                DeckIcon(color: showing.deckColor, size: Self.iconSize)
                 Text(showing.deckName).fontWeight(.semibold).lineLimit(1)
                 Spacer(minLength: 6)
                 Text(showing.positionText).monospacedDigit()
@@ -398,7 +416,7 @@ private struct SkipGlyph: View {
     }
 }
 
-/// What the widget says when there is nothing to show: no decks yet, or the chosen deck is empty.
+/// What the widget says when there is nothing to show: no decks yet, the chosen deck is empty, or it was deleted.
 private struct EmptyWidgetContent: View {
     var state: WidgetEmptyState
     var family: WidgetFamily

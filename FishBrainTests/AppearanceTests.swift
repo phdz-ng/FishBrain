@@ -276,6 +276,7 @@ final class WidgetAppearanceTests: XCTestCase {
                     FishBrainEntry.sample(accent: accent, appearance: appearance),
                     FishBrainEntry.sample(flipped: true, accent: accent, appearance: appearance),
                     FishBrainEntry.make(decks: [], playback: [:], accent: accent, appearance: appearance, at: Date()),
+                    FishBrainEntry.make(decks: [Deck(name: "Spanish")], playback: [:], accent: accent, appearance: appearance, at: Date(), deckID: UUID()),
                 ]
                 for (family, size) in sizes {
                     for entry in entries {
