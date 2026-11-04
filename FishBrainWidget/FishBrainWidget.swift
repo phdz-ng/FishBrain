@@ -46,6 +46,8 @@ struct FishBrainWidget: Widget {
     FishBrainEntry.sample()
     FishBrainEntry.sample(flipped: true)
     FishBrainEntry.sample(longText: true)
+    FishBrainEntry.sample(deckName: "Spanish irregular verbs in the past tense", deckColor: .green)
+    FishBrainEntry.sample(flipped: true, appearance: .dark, deckName: "Spanish irregular verbs in the past tense", deckColor: .green)
 }
 
 #Preview("Medium", as: .systemMedium) {

@@ -157,7 +157,8 @@ extension FishBrainEntry {
     }
 
     static func sample(
-        flipped: Bool = false, accent: AccentChoice = .default, appearance: AppearanceChoice = .default, longText: Bool = false
+        flipped: Bool = false, accent: AccentChoice = .default, appearance: AppearanceChoice = .default, longText: Bool = false,
+        deckName: String = "Everyday Spanish", deckColor: DeckColor = .accent
     ) -> FishBrainEntry {
         let card = longText
             ? Card(
@@ -165,7 +166,7 @@ extension FishBrainEntry {
                 back: "A process has its own address space and resources; threads share the memory and resources of their process, so they are cheaper to create and switch between."
             )
             : Card(front: "la sobremesa", back: "lingering at the table after a meal")
-        let deck = Deck(name: "Everyday Spanish", color: .accent, cards: (0..<48).map { _ in Card(front: card.front, back: card.back) })
+        let deck = Deck(name: deckName, color: deckColor, cards: (0..<48).map { _ in Card(front: card.front, back: card.back) })
         let now = Date()
         var state = PlaybackState()
         if flipped {
@@ -233,13 +234,19 @@ struct WidgetAppearance: ViewModifier {
     }
 }
 
-private struct SmallWidgetContent: View {
+struct SmallWidgetContent: View {
+    /// Medium and large use 18 pt.
+    static let iconSize: CGFloat = 14
+
     var showing: NowShowing
 
     var body: some View {
         VStack(spacing: 0) {
             // Outside the flip button, so tapping the header opens the app on this deck.
-            HStack {
+            // The deck's color icon tells several small widgets apart; it keeps the deck color on a
+            // flipped card, and VoiceOver skips it (the name is read already).
+            HStack(spacing: 6) {
+                DeckIcon(color: showing.deckColor, size: Self.iconSize)
                 Text(showing.deckName).fontWeight(.semibold).lineLimit(1)
                 Spacer(minLength: 6)
                 Text(showing.positionText).monospacedDigit()
