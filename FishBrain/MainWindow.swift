@@ -348,6 +348,7 @@ struct MainWindowView: View {
             rows: rows,
             decks: store.decks,
             subjects: store.subjects,
+            notchSessionDeckID: clock.sessionDeckID,
             hasLibrary: !store.decks.isEmpty || !store.subjects.isEmpty,
             query: $query,
             results: results,
@@ -678,6 +679,8 @@ struct SidebarView: View {
     /// Every deck, wherever it is filed, and the subjects: what the footer's notch picker lists.
     var decks: [Deck]
     var subjects: [Subject] = []
+    /// The deck of the notch study session that is running, for the footer's "After this session".
+    var notchSessionDeckID: Deck.ID?
     /// Whether there is anything to list; without it the list says so.
     var hasLibrary: Bool
     @Binding var query: String
@@ -778,7 +781,7 @@ struct SidebarView: View {
                 }
             }
             NewMenuButton(items: newMenuItems, onChoose: onNew)
-            NotchSettingsFooter(decks: decks, subjects: subjects)
+            NotchSettingsFooter(decks: decks, subjects: subjects, sessionDeckID: notchSessionDeckID)
         }
         // Leaves room for the traffic lights, which sit over the hidden title bar.
         .padding(.top, 38)

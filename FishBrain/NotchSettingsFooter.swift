@@ -5,27 +5,15 @@ struct NotchSettingsFooter: View {
     var decks: [Deck]
     /// For the section titles of the picker; with none, the decks are listed flat.
     var subjects: [Subject] = []
+    /// The deck of the notch study session that is running, if any: the notch keeps it until the session
+    /// ends, so a different choice here reads "After this session: …".
+    var sessionDeckID: Deck.ID?
 
     @EnvironmentObject private var settings: SettingsStore
 
-    /// The deck the notch currently shows: the chosen one, or the first deck.
+    /// The deck chosen for the notch, or the first deck. During a session the notch shows the session's.
     private var shownDeck: Deck? {
         DeckSelection.resolve(settings.notchDeckID, in: decks)
-    }
-
-    @ViewBuilder
-    private func deckButtons(_ decks: [Deck]) -> some View {
-        ForEach(decks) { deck in
-            Button {
-                settings.notchDeckID = deck.id
-            } label: {
-                if deck.id == shownDeck?.id {
-                    Label(deck.name, systemImage: "checkmark")
-                } else {
-                    Text(deck.name)
-                }
-            }
-        }
     }
 
     var body: some View {
@@ -43,16 +31,14 @@ struct NotchSettingsFooter: View {
             }
 
             Menu {
-                ForEach(Array(DeckPicker.sections(decks: decks, subjects: subjects).enumerated()), id: \.offset) { _, section in
-                    if let title = section.title {
-                        Section(title) { deckButtons(section.decks) }
-                    } else {
-                        deckButtons(section.decks)
-                    }
-                }
+                NotchDeckMenu(
+                    sections: NotchDeckMenuModel.sections(decks: decks, subjects: subjects),
+                    currentID: shownDeck?.id,
+                    onChoose: { settings.notchDeckID = $0 }
+                )
             } label: {
                 HStack(spacing: 6) {
-                    Text(shownDeck?.name ?? "No decks")
+                    Text(NotchDeckMenuModel.footerLabel(chosen: shownDeck, sessionDeckID: sessionDeckID))
                         .lineLimit(1)
                         .foregroundStyle(Theme.TextColor.primary)
                     Spacer(minLength: 4)
@@ -71,8 +57,9 @@ struct NotchSettingsFooter: View {
             .menuIndicator(.hidden)
             .disabled(decks.isEmpty || !settings.showsNotch)
             .opacity(settings.showsNotch ? 1 : 0.5)
-            .accessibilityLabel("Notch deck")
-            .accessibilityValue(shownDeck?.name ?? "None")
+            .accessibilityLabel(NotchDeckMenuModel.accessibilityLabel)
+            .accessibilityValue(NotchDeckMenuModel.footerLabel(chosen: shownDeck, sessionDeckID: sessionDeckID))
+            .accessibilityHint(NotchDeckMenuModel.hint)
         }
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.TextColor.primary.with(opacity: 0.06)))
