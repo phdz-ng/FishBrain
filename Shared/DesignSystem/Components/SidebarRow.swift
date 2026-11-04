@@ -8,12 +8,17 @@ struct SidebarRow: View {
     var isSelected = false
     /// Chosen along with other rows: a lighter fill than the open one.
     var isPicked = false
+    /// Badges between the name and the count (where the deck is playing); nothing by default.
+    var badges: AnyView?
+    /// Added to what VoiceOver says, after the count: "in the notch and 2 widgets".
+    var accessibilityDetail: String?
 
     @Environment(\.accentChoice) private var accent
 
     /// "Everyday Spanish, 48 cards": what VoiceOver says for the row.
-    static func accessibilityText(name: String, count: Int) -> String {
-        "\(name), \(count) \(count == 1 ? "card" : "cards")"
+    static func accessibilityText(name: String, count: Int, detail: String? = nil) -> String {
+        let text = "\(name), \(count) \(count == 1 ? "card" : "cards")"
+        return detail.map { "\(text), \($0)" } ?? text
     }
 
     var body: some View {
@@ -22,7 +27,10 @@ struct SidebarRow: View {
             Text(name)
                 .font(Theme.Typography.rowTitle.weight(isSelected ? .medium : .regular))
                 .foregroundStyle(isSelected ? Theme.TextColor.onAccent : Theme.TextColor.primary)
+                // With badges beside it the name stays on one line, as subject names do.
+                .lineLimit(badges == nil ? nil : 1)
                 .frame(maxWidth: .infinity, alignment: .leading)
+            if let badges { badges.fixedSize() }
             Text("\(count)")
                 .font(Theme.Typography.caption)
                 .foregroundStyle(isSelected ? Theme.TextColor.onAccent : Theme.TextColor.secondary)
@@ -37,7 +45,7 @@ struct SidebarRow: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Self.accessibilityText(name: name, count: count))
+        .accessibilityLabel(Self.accessibilityText(name: name, count: count, detail: accessibilityDetail))
         .accessibilityAddTraits(isSelected || isPicked ? .isSelected : [])
     }
 }

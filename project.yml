@@ -120,8 +120,6 @@ targets:
     sources:
       - FishBrainTests
       - Shared
-      # The widget's deck picker, compiled in so its logic can be tested.
-      - FishBrainWidget/SelectDeckIntent.swift
       # App views are compiled into the tests too; only the app entry point is left out.
       - path: FishBrain
         excludes:

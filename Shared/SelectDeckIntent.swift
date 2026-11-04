@@ -1,6 +1,12 @@
 import AppIntents
 import Foundation
 
+/// The deck widget's WidgetKit kind. The app reads placed widgets of this kind to show which deck each
+/// one plays (`WidgetDeckCountStore`), which is why the intent lives in Shared.
+enum DeckWidgetKind {
+    static let kind = "FishBrainWidget"
+}
+
 /// A deck as the widget's Edit sheet lists it.
 struct DeckEntity: AppEntity {
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Deck"

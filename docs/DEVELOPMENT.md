@@ -96,6 +96,14 @@ with a team.
 `-FishBrainPrintLibrary` (Debug builds) prints which folder the app reads and what is in it, then quits.
 `-FishBrainPrintNotch` prints each display's notch measurements and where the notch panel is placed.
 
+## The widget's deck choice in the app
+
+`SelectDeckIntent` and `DeckEntity` live in `Shared/` so the app can read what each placed widget is set
+to (`WidgetDeckCountStore`, for the sidebar's widget badges). It uses `WidgetCenter.getCurrentConfigurations`
+and `WidgetInfo.widgetConfigurationIntent(of:)`, both available from macOS 14 (the async
+`currentConfigurations()` needs macOS 15). A widget whose settings can't be decoded makes the app show no
+widget badges at all rather than a wrong count.
+
 ## Troubleshooting the widget during development
 
 - **Widget is blank, or ignores a change to its sizes or configuration.** macOS caches the widget's
@@ -113,7 +121,8 @@ with a team.
   an unmeasured width. ImageRenderer and plain windows do not reproduce it; only the real extension does.
 - **Widget shows "No cards yet" but the app has cards.** The two are reading different folders; run
   the app with `-FishBrainPrintLibrary` and check the path. Also check which deck the widget shows
-  (Edit Widget); the default is the first deck.
+  (Edit Widget); the default is the first deck. "This deck was deleted" means the widget's chosen deck
+  no longer exists; pick another in Edit Widget.
 - Read widget logs with `/usr/bin/log show --last 10m --info --predicate 'process == "FishBrainWidget"'`
   (plain `log` is shadowed by a zsh builtin).
 

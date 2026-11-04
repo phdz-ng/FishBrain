@@ -119,6 +119,28 @@ keep following the normal 5-minute rotation, which carries on untouched afterwar
 from the start date, so a Mac that sleeps through the end shows the recap on wake. A card flipped to
 its answer in a session counts toward the daily goal like any other flip.
 
+## Which deck each widget and the notch shows
+
+Still one deck per widget and one for the notch; two widgets on the same deck show the same card, since
+playback is per deck.
+
+- **The notch.** The deck name at the top of the open notch is a menu (`NotchDeckMenu`), the same one as at
+  the bottom of the sidebar: decks under their subject, loose decks last, a checkmark on the current one,
+  empty decks too. Choosing one sets `notchDeckID` and the open notch shows it at once. While a notch study
+  session runs the name is plain text: the session keeps its deck until it ends. The sidebar menu still
+  works then, and reads "After this session: <deck>".
+- **The sidebar.** Deck rows show a notch glyph for the notch's deck (while Show in notch is on) and a widget
+  glyph, with a count from two widgets up. The counts come from WidgetKit (`getCurrentConfigurations`, each
+  widget's `SelectDeckIntent`), read when the window becomes active and when decks are added or deleted, so
+  they can be briefly stale after editing a widget. A widget nobody set up counts for the first deck, one
+  whose deck was deleted counts for nothing, and if WidgetKit can't be read no widget badges show at all.
+  A deck's right-click menu has **Show in Notch** and **Widgets…** (help only: macOS lets people add and
+  change widgets, not apps).
+- **A deleted deck.** A widget whose chosen deck was deleted says "This deck was deleted" instead of showing
+  the first deck. WidgetKit resolves the stored deck id through `DeckEntityQuery`, which hands back a
+  "Deleted deck" stand-in that keeps the id (a dropped id would arrive as no deck, the same as a widget
+  nobody set up).
+
 ## Editing in the Now showing preview
 
 Double-click the text on the Now showing card to edit the side that is showing, right there. A single
@@ -145,7 +167,7 @@ Text only: pictures are still added and changed in the table.
 - **Keyboard**: New Deck (⌘N), New Subject (⇧⌘N), Add Card (⌥⌘N), Find Cards (⌘F), all in the menus; Up and Down move between
   decks in the sidebar; Return in a card's Front moves to its Back.
 - **VoiceOver**: every control is labeled, decorative icons are hidden, deck rows read "Everyday Spanish,
-  48 cards", and card faces read the front, or "Answer, ..." once flipped, in the app, the widgets and the
+  48 cards" (and where it plays: "…, in the notch and 2 widgets"), and card faces read the front, or "Answer, ..." once flipped, in the app, the widgets and the
   notch. The notch can't be hovered with VoiceOver, so its resting state is a button ("Everyday Spanish,
   card 12 of 48") whose action opens it, and the open card has a "Close card" action.
 - **Editing the Now showing card without a double click**: Tab to the card (with Full Keyboard Access),

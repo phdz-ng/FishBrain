@@ -26,7 +26,7 @@ struct FishBrainProvider: AppIntentTimelineProvider {
 }
 
 struct FishBrainWidget: Widget {
-    let kind = "FishBrainWidget"
+    let kind = DeckWidgetKind.kind
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: SelectDeckIntent.self, provider: FishBrainProvider()) { entry in

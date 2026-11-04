@@ -13,6 +13,10 @@ struct MainWindowView: View {
     @EnvironmentObject private var settings: SettingsStore
     @EnvironmentObject private var composer: ComposerModel
     @State private var isShowingWelcome = false
+    /// The deck whose "Widgets…" help is open.
+    @State private var widgetHelpDeckID: Deck.ID?
+    /// What the placed widgets are set to, for the sidebar's widget badges.
+    @StateObject private var widgetCounts = WidgetDeckCountStore()
     @State private var playbackWatcher: DirectoryWatcher?
     @ObservedObject private var router = DeepLinkRouter.shared
     @Environment(\.accentChoice) private var accent
@@ -215,7 +219,12 @@ struct MainWindowView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             playback.refresh()
             study.refresh()
+            widgetCounts.refresh()
         }
+        // Widgets are edited outside the app, so their counts are read again on the way back in, and
+        // after decks are added or deleted.
+        .onAppear { widgetCounts.refresh() }
+        .onChange(of: store.decks.map(\.id)) { _, _ in widgetCounts.refresh() }
         .alert(
             subjectPendingDeletion.map { LibraryMove.DeletionPlan(subject: $0, subjects: store.subjects, decks: store.decks).title } ?? "",
             isPresented: Binding(get: { subjectPendingDeletion != nil }, set: { if !$0 { subjectPendingDeletion = nil } }),
@@ -349,6 +358,13 @@ struct MainWindowView: View {
             decks: store.decks,
             subjects: store.subjects,
             notchSessionDeckID: clock.sessionDeckID,
+            deckPlaces: DeckPlaces.all(
+                decks: store.decks, chosenByWidgets: widgetCounts.chosen, showsNotch: settings.showsNotch,
+                notchDeckID: settings.notchDeckID, sessionDeckID: clock.sessionDeckID
+            ),
+            isShowingInNotch: { settings.isShowingInNotch($0, decks: store.decks) },
+            onShowInNotch: { settings.showInNotch($0) },
+            onShowWidgetHelp: { id in widgetHelpDeckID = id },
             hasLibrary: !store.decks.isEmpty || !store.subjects.isEmpty,
             query: $query,
             results: results,
@@ -408,6 +424,13 @@ struct MainWindowView: View {
         )
         .frame(width: Self.sidebarWidth)
         .background { Rectangle().fill(accent.sidebar).ignoresSafeArea() }
+        .sheet(isPresented: Binding(get: { widgetHelpDeckID != nil }, set: { if !$0 { widgetHelpDeckID = nil } })) {
+            WelcomeSheet(
+                hasGettingStartedDeck: false,
+                widgetHelpDeckName: store.decks.first { $0.id == widgetHelpDeckID }?.name ?? "this deck",
+                onDismiss: { widgetHelpDeckID = nil }
+            )
+        }
         .sheet(isPresented: $isShowingWelcome) {
             WelcomeSheet(
                 hasGettingStartedDeck: store.decks.contains { $0.name == GettingStarted.deckName },
@@ -681,6 +704,15 @@ struct SidebarView: View {
     var subjects: [Subject] = []
     /// The deck of the notch study session that is running, for the footer's "After this session".
     var notchSessionDeckID: Deck.ID?
+    /// Where each deck is playing (the notch, widgets), for the badges on its row; decks playing nowhere
+    /// are left out.
+    var deckPlaces: [Deck.ID: DeckPlaces] = [:]
+    /// Whether the notch shows this deck right now (and Show in notch is on).
+    var isShowingInNotch: (Deck.ID) -> Bool = { _ in false }
+    /// A deck's "Show in Notch": the notch shows it, and Show in notch is turned on.
+    var onShowInNotch: (Deck.ID) -> Void = { _ in }
+    /// A deck's "Widgets…": how to add a widget and point it at the deck.
+    var onShowWidgetHelp: (Deck.ID) -> Void = { _ in }
     /// Whether there is anything to list; without it the list says so.
     var hasLibrary: Bool
     @Binding var query: String
@@ -830,10 +862,20 @@ struct SidebarView: View {
                                 Button("Delete…", role: .destructive) { onDeleteSubject(subject.id) }
                             }
                         case .deck(let deck):
-                            Button { onSelectDeck(deck.id) } label: { SidebarDeckRow(row: deck) }
+                            Button { onSelectDeck(deck.id) } label: { SidebarDeckRow(row: deck, places: deckPlaces[deck.id] ?? .none) }
                                 .buttonStyle(.plain)
                                 .onDrag { dragProvider(.deck(deck.id)) }
                                 .contextMenu {
+                                    // The session decides the notch's deck until it ends.
+                                    if notchSessionDeckID == nil {
+                                        if isShowingInNotch(deck.id) {
+                                            Toggle("Showing in Notch", isOn: .constant(true)).disabled(true)
+                                        } else {
+                                            Button("Show in Notch") { onShowInNotch(deck.id) }
+                                        }
+                                    }
+                                    Button("Widgets…") { onShowWidgetHelp(deck.id) }
+                                    Divider()
                                     Button("Rename") { onRenameDeck(deck.id) }
                                     Picker("Color", selection: Binding(get: { deck.color }, set: { onSetDeckColor(deck.id, $0) })) {
                                         ForEach(DeckColor.allCases, id: \.self) { Text($0.displayName).tag($0) }
