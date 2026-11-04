@@ -15,13 +15,13 @@ struct FishBrainProvider: AppIntentTimelineProvider {
             let settings = LightThemeMigration.apply(SettingsStorage.shared().load()).settings
             return FishBrainEntry.gallery(accent: settings.accent, appearance: settings.appearance)
         }
-        return FishBrainEntry.current(deckID: configuration.deck?.id)
+        return FishBrainEntry.current(deckID: configuration.deck)
     }
 
     /// An entry for now and one per 5-minute slot for the next hour, then a fresh timeline. The app
     /// reloads timelines after deck edits, flips and skips.
     func timeline(for configuration: SelectDeckIntent, in context: Context) async -> Timeline<FishBrainEntry> {
-        let result = FishBrainEntry.currentTimeline(deckID: configuration.deck?.id)
+        let result = FishBrainEntry.currentTimeline(deckID: configuration.deck)
         return Timeline(entries: result.entries, policy: .after(result.reloadDate))
     }
 }

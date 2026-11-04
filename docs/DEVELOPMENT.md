@@ -98,11 +98,13 @@ with a team.
 
 ## The widget's deck choice in the app
 
-`SelectDeckIntent` and `DeckEntity` live in their own static library, `FishBrainIntents`, which both the app and
+`SelectDeckIntent` lives in its own static library, `FishBrainIntents`, which both the app and
 the widget link, so the app can read what each placed widget is set to (`WidgetDeckCountStore`, for the
 sidebar's widget badges). Keep them out of `Shared/`: App Intents names a type by its module, and `Shared/`
-is compiled into the app and the widget separately, so two copies are two different types and the widget
-ignores the deck chosen in Edit Widget. The library knows nothing of the library file; the app and the
+is compiled into the app and the widget separately, so two copies are two different intents and the widget
+ignores the deck chosen in Edit Widget. The deck is a plain string parameter (the deck's id) with an options
+provider that lists the names, not an `AppEntity`: the system's `linkd` service resolves entity parameters and
+refuses a widget without a Team ID, which is every unsigned build, so the choice never reached the widget. The library knows nothing of the library file; the app and the
 widget each call `DeckEntitySource.install()` at start to tell it where the decks are, and each declares
 an `AppIntentsPackage` that includes the library's. It uses `WidgetCenter.getCurrentConfigurations`
 and `WidgetInfo.widgetConfigurationIntent(of:)`, both available from macOS 14 (the async

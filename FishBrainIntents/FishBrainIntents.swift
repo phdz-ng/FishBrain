@@ -1,10 +1,10 @@
 import AppIntents
 import Foundation
 
-// The widget's deck choice lives in its own framework, linked by both the app and the widget. App
+// The widget's deck choice lives in its own library, linked by both the app and the widget. App
 // Intents names a type by its module, so when both targets compiled these files themselves there were
-// two DeckEntity types: the Edit Widget sheet saved one, the widget could not read it, and the widget
-// ignored the chosen deck. One module means one type.
+// two SelectDeckIntent types: the Edit Widget sheet saved one, the widget could not read it, and the
+// widget ignored the chosen deck. One module means one type.
 
 /// Lets the app and the widget (each an `AppIntentsPackage` that includes this one) see the intents here.
 public struct FishBrainIntentsPackage: AppIntentsPackage {}
@@ -25,28 +25,20 @@ public enum DeckLibrarySource {
     }
 }
 
-/// A deck as the widget's Edit sheet lists it.
-public struct DeckEntity: AppEntity {
-    public static let typeDisplayRepresentation: TypeDisplayRepresentation = "Deck"
-    public static let defaultQuery = DeckEntityQuery()
-
+/// A deck as the widget's Edit sheet lists it. Not an `AppEntity`: the widget stores the deck's id as a
+/// plain string (see `SelectDeckIntent`). An entity parameter is resolved by the system's `linkd`
+/// service, which refuses a widget without a Team ID, so on an unsigned build the chosen deck never
+/// reached the widget and it showed the first deck whatever you picked.
+public struct DeckEntity: Sendable, Equatable {
     public var id: UUID
     public var name: String
     /// The subjects the deck is filed under, "Spanish › Grammar", which tells decks with the same name
     /// apart; nil for a loose deck. The widget itself still shows the deck's name only.
     public var subjectPath: String?
-    /// The widget was set to this deck, and it has since been deleted (see `DeckEntityQuery`).
+    /// The widget was set to this deck, and it has since been deleted.
     public var isDeleted = false
 
     public static let deletedName = "Deleted deck"
-
-    public var displayRepresentation: DisplayRepresentation {
-        if isDeleted { return DisplayRepresentation(title: "\(Self.deletedName)") }
-        if let subjectPath {
-            return DisplayRepresentation(title: "\(name)", subtitle: "\(subjectPath)")
-        }
-        return DisplayRepresentation(title: "\(name)")
-    }
 
     public init(id: UUID, name: String, subjectPath: String? = nil, isDeleted: Bool = false) {
         self.id = id
@@ -66,21 +58,20 @@ public struct DeckEntity: AppEntity {
     }
 }
 
-/// Reads the library fresh each time, so decks created, renamed or deleted in the app show up in
-/// the picker without any refresh step.
-public struct DeckEntityQuery: EntityQuery {
+/// Lists the decks in the Edit Widget picker, by name, with the deck's id as the stored value. Reads
+/// the library fresh each time, so decks created, renamed or deleted in the app show up without any
+/// refresh step.
+public struct DeckOptionsProvider: DynamicOptionsProvider {
     public init() {}
 
-    /// WidgetKit asks for the stored deck id of each placed widget here. A dropped id would reach the
-    /// timeline as a nil deck, the same as a widget nobody set up, so a deleted deck comes back as a
-    /// stand-in that keeps its id: the widget then says the deck was deleted, and Edit Widget shows
-    /// "Deleted deck" until another is chosen.
-    public func entities(for identifiers: [UUID]) async throws -> [DeckEntity] {
-        DeckEntity.resolving(identifiers, in: DeckLibrarySource.decks())
-    }
-
-    public func suggestedEntities() async throws -> [DeckEntity] {
-        DeckLibrarySource.decks()
+    public func results() async throws -> IntentItemCollection<String> {
+        let items: [IntentItem<String>] = DeckLibrarySource.decks().map { deck in
+            if let path = deck.subjectPath {
+                return IntentItem(deck.id.uuidString, title: "\(deck.name)", subtitle: "\(path)")
+            }
+            return IntentItem(deck.id.uuidString, title: "\(deck.name)")
+        }
+        return IntentItemCollection(sections: [IntentItemSection(items: items)])
     }
 }
 
@@ -90,8 +81,12 @@ public struct SelectDeckIntent: WidgetConfigurationIntent {
     public static let title: LocalizedStringResource = "Choose Deck"
     public static let description = IntentDescription("Pick the deck this widget shows.")
 
-    @Parameter(title: "Deck")
-    public var deck: DeckEntity?
+    /// The chosen deck's id (a UUID string).
+    @Parameter(title: "Deck", optionsProvider: DeckOptionsProvider())
+    public var deckID: String?
 
     public init() {}
+
+    /// The chosen deck's id; nil when none is chosen.
+    public var deck: UUID? { deckID.flatMap(UUID.init(uuidString:)) }
 }

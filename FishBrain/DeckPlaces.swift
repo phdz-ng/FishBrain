@@ -110,7 +110,7 @@ final class WidgetDeckCountStore: ObservableObject {
         var chosen: [Deck.ID?] = []
         for widget in widgets {
             guard let intent = widget.widgetConfigurationIntent(of: SelectDeckIntent.self) else { return nil }
-            chosen.append(intent.deck?.id)
+            chosen.append(intent.deck)
         }
         return chosen
     }
