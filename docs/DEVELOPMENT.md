@@ -102,9 +102,9 @@ with a team.
 the widget link, so the app can read what each placed widget is set to (`WidgetDeckCountStore`, for the
 sidebar's widget badges). Keep them out of `Shared/`: App Intents names a type by its module, and `Shared/`
 is compiled into the app and the widget separately, so two copies are two different types and the widget
-ignores the deck chosen in Edit Widget. The framework knows nothing of the library file; the app and the
+ignores the deck chosen in Edit Widget. The library knows nothing of the library file; the app and the
 widget each call `DeckEntitySource.install()` at start to tell it where the decks are, and each declares
-an `AppIntentsPackage` that includes the framework's. It uses `WidgetCenter.getCurrentConfigurations`
+an `AppIntentsPackage` that includes the library's. It uses `WidgetCenter.getCurrentConfigurations`
 and `WidgetInfo.widgetConfigurationIntent(of:)`, both available from macOS 14 (the async
 `currentConfigurations()` needs macOS 15). A widget whose settings can't be decoded makes the app show no
 widget badges at all rather than a wrong count.
