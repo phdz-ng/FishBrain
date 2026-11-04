@@ -81,6 +81,8 @@ targets:
     dependencies:
       - target: FishBrainWidget
         embed: true
+      - target: FishBrainIntents
+        embed: false
       # Apple Intelligence's framework only exists on macOS 26 and later; the app still runs from macOS 14.
       - sdk: FoundationModels.framework
         weak: true
@@ -114,6 +116,23 @@ targets:
         ENABLE_HARDENED_RUNTIME: true
         SKIP_INSTALL: true
         APPLICATION_EXTENSION_API_ONLY: true
+    dependencies:
+      - target: FishBrainIntents
+        embed: false
+  FishBrainIntents:
+    # The widget's deck choice (SelectDeckIntent, DeckEntity), shared by the app and the widget so that
+    # App Intents sees one type, not one per module. A static library: it is linked into both, so there is
+    # nothing to load at launch (a framework signed ad-hoc is refused by the hardened runtime).
+    type: library.static
+    platform: macOS
+    sources:
+      - FishBrainIntents
+    settings:
+      base:
+        PRODUCT_NAME: FishBrainIntents
+        SKIP_INSTALL: true
+        APPLICATION_EXTENSION_API_ONLY: true
+        DEFINES_MODULE: true
   FishBrainTests:
     type: bundle.unit-test
     platform: macOS
@@ -127,6 +146,9 @@ targets:
           - Assets.xcassets
           - "*.entitlements"
           - Info.plist
+    dependencies:
+      - target: FishBrainIntents
+        embed: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID_PREFIX).fishbrain.tests
