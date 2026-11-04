@@ -1,3 +1,4 @@
+import FishBrainIntents
 import XCTest
 
 @MainActor

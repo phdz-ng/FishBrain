@@ -1,5 +1,12 @@
+import AppIntents
 import AppKit
+import FishBrainIntents
 import SwiftUI
+
+/// Includes the deck choice from the FishBrainIntents framework, which the widget shares (see there).
+struct FishBrainAppPackage: AppIntentsPackage {
+    static var includedPackages: [any AppIntentsPackage.Type] { [FishBrainIntentsPackage.self] }
+}
 
 @main
 struct FishBrainApp: App {
@@ -10,6 +17,7 @@ struct FishBrainApp: App {
     @StateObject private var playback = AppEnvironment.shared.playbackStore
 
     init() {
+        DeckEntitySource.install()
         // Before the first window, so it opens in the chosen appearance.
         AppearanceController.shared.start(settings: AppEnvironment.shared.settingsStore)
     }

@@ -1,3 +1,4 @@
+import FishBrainIntents
 import AppIntents
 import SwiftUI
 import WidgetKit

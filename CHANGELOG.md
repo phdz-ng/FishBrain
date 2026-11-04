@@ -2,6 +2,7 @@
 
 ## 1.1
 
+- **Fix: a widget showed the first deck whatever you chose in Edit Widget.** The choice is now read the same way by the app and the widget.
 - **See and switch which deck plays where.** The deck name at the top of the open notch is now a menu, so
   you can switch the notch's deck right there (not during a notch study session, which keeps its deck until
   it ends; the sidebar menu then reads "After this session: <deck>"). Deck rows in the sidebar show a notch

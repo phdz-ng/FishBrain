@@ -26,9 +26,9 @@ final class ReleaseTests: XCTestCase {
         XCTAssertFalse(script.contains("password"), "no credentials in the script")
     }
 
-    func testBothTargetsKeepTheHardenedRuntime() throws {
+    func testEveryShippedTargetKeepsTheHardenedRuntime() throws {
         let yml = try text("project.yml")
-        XCTAssertEqual(yml.components(separatedBy: "ENABLE_HARDENED_RUNTIME: true").count - 1, 2)
+        XCTAssertEqual(yml.components(separatedBy: "ENABLE_HARDENED_RUNTIME: true").count - 1, 3, "app, widget and the intents framework")
     }
 
     func testTheAppSharesItsVersionWithTheWidget() throws {
