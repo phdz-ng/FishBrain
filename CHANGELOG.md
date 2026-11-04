@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1
 
 - **See and switch which deck plays where.** The deck name at the top of the open notch is now a menu, so
   you can switch the notch's deck right there (not during a notch study session, which keeps its deck until
