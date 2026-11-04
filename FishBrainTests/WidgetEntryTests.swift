@@ -73,6 +73,7 @@ final class WidgetViewRenderTests: XCTestCase {
             ("empty", FishBrainEntry.make(decks: [], playback: [:], accent: .indigo, at: Date())),
             ("empty-deck", FishBrainEntry.make(decks: [Deck(name: "Everyday Spanish")], playback: [:], accent: .teal, at: Date())),
             ("empty-deck-long-name", FishBrainEntry.make(decks: [Deck(name: "An extremely long deck name that goes on and on")], playback: [:], accent: .indigo, at: Date())),
+            ("deck-deleted", FishBrainEntry.make(decks: [Deck(name: "Everyday Spanish")], playback: [:], accent: .teal, at: Date(), deckID: UUID())),
         ]
         for (family, size) in Self.sizes {
             for (name, entry) in entries {

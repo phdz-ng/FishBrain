@@ -22,10 +22,9 @@ final class WidgetDeckChoiceTests: XCTestCase {
         XCTAssertEqual(shown(nil), "Spanish")
     }
 
-    func testADeletedChoiceFallsBackToTheFirstDeck() {
+    func testADeletedChoiceShowsNoOtherDeck() {
         let afterDeletingBiology = [spanish, capitals]
-        XCTAssertEqual(shown(biology.id, in: afterDeletingBiology), "Spanish")
-        XCTAssertEqual(shown(spanish.id, in: [biology, capitals]), "Biology", "first deck of what remains")
+        XCTAssertNil(shown(biology.id, in: afterDeletingBiology), "it says the deck was deleted (WidgetEmptyStateTests)")
     }
 
     func testDeletingEveryDeckLeavesNothingToShow() {

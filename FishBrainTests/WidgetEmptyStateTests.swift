@@ -33,11 +33,52 @@ final class WidgetEmptyStateTests: XCTestCase {
         XCTAssertEqual(e.emptyState, .emptyDeck(id: empty.id, name: "Empty Deck"))
     }
 
-    func testADeletedChosenDeckFallsBackToTheFirstDeck() {
-        XCTAssertEqual(entry([spanish], choose: empty.id).showing?.deckName, "Spanish")
-        XCTAssertEqual(entry([empty], choose: spanish.id).emptyState, .emptyDeck(id: empty.id, name: "Empty Deck"),
-                       "the first deck is empty, so that is what the widget says")
+    // MARK: A deleted deck (FLAS-109)
+
+    func testNeverChosenShowsTheFirstDeck() {
+        XCTAssertEqual(entry([spanish, empty]).showing?.deckName, "Spanish")
+    }
+
+    func testChosenAndPresentShowsThatDeck() {
+        let biology = Deck(name: "Biology", cards: [Card(front: "cell", back: "x")])
+        XCTAssertEqual(entry([spanish, biology], choose: biology.id).showing?.deckName, "Biology")
+    }
+
+    func testADeletedChosenDeckSaysSoInsteadOfShowingAnotherDeck() {
+        let e = entry([spanish], choose: empty.id)
+        XCTAssertNil(e.showing, "no silent fallback to the first deck")
+        XCTAssertEqual(e.emptyState, .deckDeleted)
+        XCTAssertEqual(e.emptyState?.title, "This deck was deleted")
+        XCTAssertEqual(e.emptyState?.subtitle, "Right-click and choose Edit Widget to pick another.")
+        XCTAssertEqual(entry([empty], choose: spanish.id).emptyState, .deckDeleted, "whatever the remaining decks hold")
+    }
+
+    func testWithNoDecksLeftTheWidgetAsksForAFirstDeck() {
         XCTAssertEqual(entry([], choose: spanish.id).emptyState, .noDecks)
+    }
+
+    func testTappingADeletedDecksWidgetJustOpensTheApp() {
+        XCTAssertEqual(entry([spanish], choose: empty.id).openURL, DeepLink.app)
+    }
+
+    func testADeletedDecksTimelineIsASingleEntry() {
+        let timeline = FishBrainEntry.timeline(decks: [spanish], playback: [:], accent: .indigo, at: now, deckID: empty.id)
+        XCTAssertEqual(timeline.entries.map(\.emptyState), [.deckDeleted])
+    }
+
+    func testChoosingAnotherDeckBringsTheWidgetBack() {
+        XCTAssertEqual(entry([spanish], choose: empty.id).emptyState, .deckDeleted)
+        XCTAssertEqual(entry([spanish], choose: spanish.id).showing?.deckName, "Spanish", "the next timeline shows it")
+    }
+
+    func testTheQueryKeepsADeletedDecksIDSoTheWidgetCanTellItApart() {
+        // What WidgetKit hands the timeline provider: the stored id, resolved by `DeckEntityQuery`.
+        let resolved = DeckEntity.resolving([empty.id, spanish.id], in: [spanish])
+        XCTAssertEqual(resolved.map(\.id), [empty.id, spanish.id])
+        XCTAssertEqual(resolved.map(\.isDeleted), [true, false])
+        XCTAssertEqual(resolved.first?.name, "Deleted deck")
+        XCTAssertEqual(entry([spanish], choose: resolved.first?.id).emptyState, .deckDeleted)
+        XCTAssertEqual(entry([spanish], choose: resolved.last?.id).showing?.deckName, "Spanish")
     }
 
     func testADeckWithCardsHasNoEmptyState() {

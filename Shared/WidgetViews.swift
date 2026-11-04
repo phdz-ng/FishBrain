@@ -22,7 +22,8 @@ struct FishBrainEntry: TimelineEntry {
         return DeepLink.app
     }
 
-    /// Shows the chosen deck, or the first deck when none was chosen or the chosen one was deleted.
+    /// Shows the chosen deck, or the first deck when none was chosen. A chosen deck that was deleted
+    /// says so (`.deckDeleted`) rather than quietly showing another deck.
     static func make(
         decks: [Deck],
         playback: [Deck.ID: PlaybackState],
@@ -32,6 +33,12 @@ struct FishBrainEntry: TimelineEntry {
         deckID: Deck.ID? = nil,
         scheduler: CardScheduler = CardScheduler()
     ) -> FishBrainEntry {
+        if let deckID, !decks.isEmpty, !decks.contains(where: { $0.id == deckID }) {
+            return FishBrainEntry(
+                date: date, accent: accent, appearance: appearance, showing: nil, emptyState: .deckDeleted,
+                nextRotation: scheduler.nextRotation(after: date)
+            )
+        }
         let deck = DeckSelection.resolve(deckID, in: decks)
         let showing = deck.flatMap {
             NowShowing.make(deck: $0, state: playback[$0.id] ?? PlaybackState(), at: date, scheduler: scheduler)
@@ -117,11 +124,14 @@ struct FishBrainEntry: TimelineEntry {
 enum WidgetEmptyState: Equatable, Sendable {
     case noDecks
     case emptyDeck(id: Deck.ID, name: String)
+    /// The deck this widget was set to was deleted. (With no decks left at all it is `noDecks`.)
+    case deckDeleted
 
     var title: String {
         switch self {
         case .noDecks: "Open FishBrain to create your first deck"
         case .emptyDeck(_, let name): "Add cards to “\(name)”"
+        case .deckDeleted: "This deck was deleted"
         }
     }
 
@@ -129,6 +139,7 @@ enum WidgetEmptyState: Equatable, Sendable {
         switch self {
         case .noDecks: nil
         case .emptyDeck: "Open FishBrain to add some."
+        case .deckDeleted: "Right-click and choose Edit Widget to pick another."
         }
     }
 }
@@ -405,7 +416,7 @@ private struct SkipGlyph: View {
     }
 }
 
-/// What the widget says when there is nothing to show: no decks yet, or the chosen deck is empty.
+/// What the widget says when there is nothing to show: no decks yet, the chosen deck is empty, or it was deleted.
 private struct EmptyWidgetContent: View {
     var state: WidgetEmptyState
     var family: WidgetFamily

@@ -65,6 +65,7 @@ struct FishBrainWidget: Widget {
 } timeline: {
     FishBrainEntry.make(decks: [], playback: [:], accent: .indigo, at: Date())
     FishBrainEntry.make(decks: [Deck(name: "Everyday Spanish")], playback: [:], accent: .indigo, at: Date())
+    FishBrainEntry.make(decks: [Deck(name: "Everyday Spanish")], playback: [:], accent: .indigo, at: Date(), deckID: UUID())
 }
 
 #Preview("Large", as: .systemLarge) {
